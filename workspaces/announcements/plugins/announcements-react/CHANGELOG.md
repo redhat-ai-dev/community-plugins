@@ -1,5 +1,39 @@
 # @backstage-community/plugin-announcements-react
 
+## 0.9.0
+
+### Minor Changes
+
+- bb76f4e: This change introduces tag filtering to announcements, allowing users to filter by tag by clicking on a tag on an announcement card.
+- 220cc20: Backstage version bump to v1.41.1
+
+### Patch Changes
+
+- Updated dependencies [220cc20]
+  - @backstage-community/plugin-announcements-common@0.7.0
+
+## 0.8.0
+
+### Minor Changes
+
+- 775d236: Backstage version bump to v1.40.2
+
+### Patch Changes
+
+- Updated dependencies [775d236]
+  - @backstage-community/plugin-announcements-common@0.6.0
+
+## 0.7.0
+
+### Minor Changes
+
+- 8c803d8: Added support for tags in announcements
+
+### Patch Changes
+
+- Updated dependencies [8c803d8]
+  - @backstage-community/plugin-announcements-common@0.5.1
+
 ## 0.6.1
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @backstage-community/plugin-sonarqube-react
 
+## 0.8.1
+
+### Patch Changes
+
+- b64dc92: Fixed bug in SonarQubeRelatedEntitiesOverview where the projectInstance was always undefined
+
+## 0.8.0
+
+### Minor Changes
+
+- ad4279b: Backstage version bump to v1.40.2
+
 ## 0.7.0
 
 ### Minor Changes

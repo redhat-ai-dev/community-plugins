@@ -1,5 +1,44 @@
 # @backstage-community/plugin-search-backend-module-announcements
 
+## 0.6.0
+
+### Minor Changes
+
+- 220cc20: Backstage version bump to v1.41.1
+
+### Patch Changes
+
+- Updated dependencies [220cc20]
+  - @backstage-community/plugin-announcements-common@0.7.0
+  - @backstage-community/plugin-announcements-node@0.7.0
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [1a231d9]
+  - @backstage-community/plugin-announcements-node@0.6.0
+
+## 0.5.0
+
+### Minor Changes
+
+- 775d236: Backstage version bump to v1.40.2
+
+### Patch Changes
+
+- Updated dependencies [775d236]
+  - @backstage-community/plugin-announcements-common@0.6.0
+  - @backstage-community/plugin-announcements-node@0.5.0
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [8c803d8]
+  - @backstage-community/plugin-announcements-common@0.5.1
+  - @backstage-community/plugin-announcements-node@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

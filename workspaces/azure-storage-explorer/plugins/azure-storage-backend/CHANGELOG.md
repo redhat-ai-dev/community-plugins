@@ -1,5 +1,17 @@
 # @backstage-community/plugin-azure-storage-explorer-backend
 
+## 0.6.1
+
+### Patch Changes
+
+- 2457ca6: Updated dependency `@azure/identity` to `4.10.2`.
+
+## 0.6.0
+
+### Minor Changes
+
+- 2fe1123: Backstage version bump to v1.40.2
+
 ## 0.5.3
 
 ### Patch Changes
