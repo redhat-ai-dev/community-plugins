@@ -49,9 +49,10 @@ export const backstageMcpPlugin = createBackendPlugin({
 
 List all Backstage entities such as Components, Systems, Resources, APIs, Locations, Users, and Groups. 
 Results are returned in JSON array format, where each entry in the JSON array has the following fields: 'name', 'description','uid', and 'type'.
+Note: 'type' can only be filtered on if a specified entity 'kind' is also specified.
 
-This tool searches through the software catalog to find components the entities. It supports filtering by entity properties and 
-text-based search across entity metadata.
+This tool searches through the Backstage software catalog to find entities matching the given query (returns all entities if no query specified). 
+It supports filtering by entity properties and text-based search across entity metadata.
 
 Examples:
   # Get all entities in the catalog
@@ -138,6 +139,7 @@ Examples:
     }
   ]
 }
+<End of Description>
 `,
           schema: {
             input: z =>
