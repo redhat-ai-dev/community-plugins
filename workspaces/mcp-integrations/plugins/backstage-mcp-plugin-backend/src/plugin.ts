@@ -54,7 +54,7 @@ Note: 'type' can only be filtered on if a specified entity 'kind' is also specif
 This tool searches through the Backstage software catalog to find entities matching the given query (returns all entities if no query specified). 
 It supports filtering by entity properties and text-based search across entity metadata.
 
-Examples:
+Example invocations and the output from those invocations:
   # Get all entities in the catalog
   fetch-catalog-entities
   Output: {
