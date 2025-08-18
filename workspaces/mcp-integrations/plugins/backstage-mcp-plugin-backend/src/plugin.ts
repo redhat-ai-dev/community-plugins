@@ -53,7 +53,7 @@ Results are returned in JSON array format, where each entry in the JSON array ha
 This tool searches through the software catalog to find components the entities. It supports filtering by entity properties and 
 text-based search across entity metadata.
 
-Examples:
+Example invocations and the output from those invocations:
   # Get all entities in the catalog
   fetch-catalog-entities
   Output: {
