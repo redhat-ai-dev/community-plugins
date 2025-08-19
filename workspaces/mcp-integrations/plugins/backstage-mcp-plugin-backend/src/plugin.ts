@@ -139,8 +139,8 @@ Example invocations and the output from those invocations:
     }
   ]
 }
-<End of Description>
 `,
+          // End description
           schema: {
             input: z =>
               z.object({
