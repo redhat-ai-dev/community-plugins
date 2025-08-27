@@ -34,6 +34,7 @@ backend:
     client: better-sqlite3
     connection: ':memory:'
   auth:
+    dangerouslyDisableDefaultAuthPolicy: true
     externalAccess:
       - type: static
         options:

@@ -65,4 +65,10 @@ backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
 // MCP tools
 backend.add(import('@backstage/backstage-mcp-plugin-backend'));
+backend.add(
+  import(
+    '@@backstage-community/plugin-mcp-actions-backend-backend-module-mcp-actions-rhdh'
+  ),
+);
+backend.add(import('@@backstage-community/plugin-mcp-actions-backend-backend'));
 backend.start();
