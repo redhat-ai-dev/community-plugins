@@ -21,8 +21,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { JsonObject } from '@backstage/types';
 import { ActionsService } from '@backstage/backend-plugin-api/alpha';
-// Hardcoded version for dynamic plugin compatibility
-const version = '0.1.1-next.0';
+// This does not seem to work when the plugin is packaged as a dynamic plugin -- it says package.json does not exist
+// This likely warrants some more debugging, but for now just hardcode the version
+// import { version } from '@backstage/plugin-mcp-actions-backend/package.json';
+const version = '0.1.2';
 import { NotFoundError } from '@backstage/errors';
 
 export class McpService {
