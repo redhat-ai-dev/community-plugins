@@ -21,7 +21,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { JsonObject } from '@backstage/types';
 import { ActionsService } from '@backstage/backend-plugin-api/alpha';
-import { version } from '@backstage/plugin-mcp-actions-backend/package.json';
+// Dynamic plugin compatible version - reads from own package.json
+const packageJson = require('../../package.json');
+
+const version = packageJson.version;
 import { NotFoundError } from '@backstage/errors';
 
 export class McpService {
