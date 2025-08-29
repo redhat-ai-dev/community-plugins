@@ -252,11 +252,9 @@ describe('backstageMcpPlugin', () => {
         items: mockEntities,
       });
 
-      const result = await fetchCatalogEntities(
-        mockCatalogService,
-        mockAuthService,
-        { kind: 'Component' },
-      );
+      await fetchCatalogEntities(mockCatalogService, mockAuthService, {
+        kind: 'Component',
+      });
 
       expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
         {
