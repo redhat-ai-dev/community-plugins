@@ -28,7 +28,7 @@ import { actionsRegistryServiceRef } from '@backstage/backend-plugin-api/alpha';
  * @public
  */
 export const backstageMcpPlugin = createBackendPlugin({
-  pluginId: 'backstage-mcp-plugin',
+  pluginId: 'backstage-mcp-tools',
   register(env) {
     env.registerInit({
       deps: {

@@ -8,7 +8,7 @@ organization:
 backend:
   actions:
     pluginSources:
-      - 'backstage-mcp-plugin'
+      - 'backstage-mcp-tools'
   # Used for enabling authentication, secret is shared by all backend plugins
   # See https://backstage.io/docs/auth/service-to-service-auth for
   # information on the format
@@ -34,7 +34,6 @@ backend:
     client: better-sqlite3
     connection: ':memory:'
   auth:
-    dangerouslyDisableDefaultAuthPolicy: true
     externalAccess:
       - type: static
         options:
