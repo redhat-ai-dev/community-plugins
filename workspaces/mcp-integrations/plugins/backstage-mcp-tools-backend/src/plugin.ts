@@ -229,6 +229,54 @@ Example invocations and the output from those invocations:
             }
           },
         });
+        actionsRegistry.register({
+          name: 'get-catalog-entity',
+          title: 'Fetch Full Catalog Entity',
+          description: `Retrieve a specific catalog entity from the Backstage catalog, returning its entire object.
+`,
+          // End description
+          // Begin schema
+          schema: {
+            input: z =>
+              z.object({
+                name: z
+                  .string()
+                  .optional()
+                  .describe('The entity name to retrieve'),
+              }),
+            output: z =>
+              z.object({
+                entity: z
+                  .any()
+                  .optional()
+                  .describe(
+                    'The complete Backstage entity object with all metadata',
+                  ),
+                error: z
+                  .string()
+                  .optional()
+                  .describe('Error message if validation fails'),
+              }),
+          },
+          action: async ({ input }) => {
+            try {
+              const result = await getCatalogEntity(catalog, auth, input);
+              return {
+                output: {
+                  ...result,
+                  error: undefined,
+                },
+              };
+            } catch (error) {
+              return {
+                output: {
+                  entity: undefined,
+                  error: error.message,
+                },
+              };
+            }
+          },
+        });
       },
     });
   },
@@ -276,5 +324,47 @@ export async function fetchCatalogEntities(
       type:
         typeof entity.spec?.type === 'string' ? entity.spec.type : undefined,
     })),
+  };
+}
+
+// getCatalogEntity retrieves a specific entity from the Backstage catalog by name and returns the complete entity object
+export async function getCatalogEntity(
+  catalog: CatalogService,
+  auth: any,
+  input?: { name?: string },
+) {
+  const credentials = await auth.getOwnServiceCredentials();
+
+  if (!input?.name) {
+    throw new Error('Entity name is required');
+  }
+
+  // Build filter to find entity by name
+  const filter = {
+    'metadata.name': input.name,
+  };
+
+  const { items } = await catalog.getEntities(
+    {
+      // Don't specify fields to get the complete entity object
+      filter,
+    },
+    {
+      credentials,
+    },
+  );
+
+  if (items.length === 0) {
+    throw new Error(`Entity with name '${input.name}' not found`);
+  }
+
+  if (items.length > 1) {
+    throw new Error(
+      `Multiple entities found with name '${input.name}'. Please specify more details.`,
+    );
+  }
+
+  return {
+    entity: items[0], // Return the complete entity object
   };
 }
