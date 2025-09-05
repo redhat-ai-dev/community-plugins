@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Assisted-by: claude-4-sonnet
+
 import { fetchCatalogEntities } from './plugin';
 import { CatalogService } from '@backstage/plugin-catalog-node';
 import { Entity } from '@backstage/catalog-model';
+import { mockServices } from '@backstage/backend-test-utils';
 
 describe('backstageMcpPlugin', () => {
   describe('fetchCatalogEntities', () => {
@@ -26,6 +29,8 @@ describe('backstageMcpPlugin', () => {
     const mockAuthService = {
       getOwnServiceCredentials: jest.fn(),
     };
+
+    const mockLoggerService = mockServices.logger.mock();
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -43,6 +48,9 @@ describe('backstageMcpPlugin', () => {
           },
           spec: {
             type: 'service',
+            owner: 'test-team',
+            lifecycle: 'production',
+            dependsOn: [],
           },
         },
         {
@@ -55,6 +63,9 @@ describe('backstageMcpPlugin', () => {
           },
           spec: {
             type: 'openapi',
+            owner: 'user:jane.doe',
+            lifecycle: 'production',
+            dependsOn: [],
           },
         },
         {
@@ -67,6 +78,8 @@ describe('backstageMcpPlugin', () => {
           },
           spec: {
             type: 'system',
+            owner: 'team-architecture',
+            lifecycle: 'production',
           },
         },
       ];
@@ -83,6 +96,7 @@ describe('backstageMcpPlugin', () => {
       const result = await fetchCatalogEntities(
         mockCatalogService,
         mockAuthService,
+        mockLoggerService,
       );
 
       expect(mockAuthService.getOwnServiceCredentials).toHaveBeenCalledTimes(1);
@@ -94,6 +108,9 @@ describe('backstageMcpPlugin', () => {
             'metadata.tags',
             'metadata.description',
             'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
           ],
           filter: {},
         },
@@ -112,21 +129,30 @@ describe('backstageMcpPlugin', () => {
             kind: 'Component',
             tags: ['java', 'spring'],
             description: 'A Spring-based microservice',
+            lifecycle: 'production',
             type: 'service',
+            owner: 'test-team',
+            dependsOn: [],
           },
           {
             name: 'my-api',
             kind: 'API',
             tags: ['rest', 'openapi'],
             description: 'REST API for data access',
+            lifecycle: 'production',
             type: 'openapi',
+            owner: 'user:jane.doe',
+            dependsOn: [],
           },
           {
             name: 'my-system',
             kind: 'System',
             tags: [],
             description: 'Core business system',
+            lifecycle: 'production',
             type: 'system',
+            owner: 'team-architecture',
+            dependsOn: [],
           },
         ],
       });
@@ -143,6 +169,8 @@ describe('backstageMcpPlugin', () => {
           },
           spec: {
             type: 'service',
+            owner: 'user:john.doe',
+            lifecycle: 'staging',
           },
         },
       ];
@@ -159,6 +187,7 @@ describe('backstageMcpPlugin', () => {
       const result = await fetchCatalogEntities(
         mockCatalogService,
         mockAuthService,
+        mockLoggerService,
       );
 
       expect(result).toEqual({
@@ -168,7 +197,10 @@ describe('backstageMcpPlugin', () => {
             kind: 'Component',
             tags: [],
             description: 'Service without tags',
+            lifecycle: 'staging',
             type: 'service',
+            owner: 'user:john.doe',
+            dependsOn: [],
           },
         ],
       });
@@ -187,6 +219,7 @@ describe('backstageMcpPlugin', () => {
       const result = await fetchCatalogEntities(
         mockCatalogService,
         mockAuthService,
+        mockLoggerService,
       );
 
       expect(result).toEqual({
@@ -205,7 +238,11 @@ describe('backstageMcpPlugin', () => {
       );
 
       await expect(
-        fetchCatalogEntities(mockCatalogService, mockAuthService),
+        fetchCatalogEntities(
+          mockCatalogService,
+          mockAuthService,
+          mockLoggerService,
+        ),
       ).rejects.toThrow('Catalog service error');
     });
 
@@ -215,7 +252,11 @@ describe('backstageMcpPlugin', () => {
       );
 
       await expect(
-        fetchCatalogEntities(mockCatalogService, mockAuthService),
+        fetchCatalogEntities(
+          mockCatalogService,
+          mockAuthService,
+          mockLoggerService,
+        ),
       ).rejects.toThrow('Authentication failed');
     });
 
@@ -229,7 +270,11 @@ describe('backstageMcpPlugin', () => {
             tags: ['java'],
             description: 'A service',
           },
-          spec: { type: 'service' },
+          spec: {
+            type: 'service',
+            owner: 'test-team',
+            lifecycle: 'production',
+          },
         },
         {
           apiVersion: 'backstage.io/v1alpha1',
@@ -239,7 +284,11 @@ describe('backstageMcpPlugin', () => {
             tags: ['rest'],
             description: 'An API',
           },
-          spec: { type: 'openapi' },
+          spec: {
+            type: 'openapi',
+            owner: 'user:api.owner',
+            lifecycle: 'production',
+          },
         },
       ];
 
@@ -252,9 +301,14 @@ describe('backstageMcpPlugin', () => {
         items: mockEntities,
       });
 
-      await fetchCatalogEntities(mockCatalogService, mockAuthService, {
-        kind: 'Component',
-      });
+      await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
+        {
+          kind: 'Component',
+        },
+      );
 
       expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
         {
@@ -264,6 +318,9 @@ describe('backstageMcpPlugin', () => {
             'metadata.tags',
             'metadata.description',
             'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
           ],
           filter: { kind: 'Component' },
         },
@@ -276,17 +333,21 @@ describe('backstageMcpPlugin', () => {
       );
     });
 
-    it('should filter entities by kind and type', async () => {
+    it('should filter entities by kind, type, name, and owner', async () => {
       const mockEntities: Entity[] = [
         {
           apiVersion: 'backstage.io/v1alpha1',
           kind: 'Component',
           metadata: {
-            name: 'web-service',
+            name: 'specific-service',
             tags: ['javascript'],
-            description: 'A web service',
+            description: 'A specific web service',
           },
-          spec: { type: 'service' },
+          spec: {
+            type: 'service',
+            owner: 'team-frontend',
+            lifecycle: 'production',
+          },
         },
       ];
 
@@ -302,7 +363,13 @@ describe('backstageMcpPlugin', () => {
       const result = await fetchCatalogEntities(
         mockCatalogService,
         mockAuthService,
-        { kind: 'Component', type: 'service' },
+        mockLoggerService,
+        {
+          kind: 'Component',
+          type: 'service',
+          name: 'specific-service',
+          owner: 'team-frontend',
+        },
       );
 
       expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
@@ -313,8 +380,16 @@ describe('backstageMcpPlugin', () => {
             'metadata.tags',
             'metadata.description',
             'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
           ],
-          filter: { kind: 'Component', 'spec.type': 'service' },
+          filter: {
+            kind: 'Component',
+            'spec.type': 'service',
+            'metadata.name': 'specific-service',
+            'spec.owner': 'team-frontend',
+          },
         },
         {
           credentials: {
@@ -327,26 +402,34 @@ describe('backstageMcpPlugin', () => {
       expect(result).toEqual({
         entities: [
           {
-            name: 'web-service',
+            name: 'specific-service',
             kind: 'Component',
             tags: ['javascript'],
-            description: 'A web service',
+            description: 'A specific web service',
+            lifecycle: 'production',
             type: 'service',
+            owner: 'team-frontend',
+            dependsOn: [],
           },
         ],
       });
     });
 
-    it('should handle entities with missing description and type', async () => {
+    it('should filter entities by name', async () => {
       const mockEntities: Entity[] = [
         {
           apiVersion: 'backstage.io/v1alpha1',
           kind: 'Component',
           metadata: {
-            name: 'minimal-service',
-            tags: ['minimal'],
+            name: 'my-service',
+            tags: ['java', 'spring'],
+            description: 'A Spring-based microservice',
           },
-          spec: {},
+          spec: {
+            type: 'service',
+            owner: 'team-backend',
+            lifecycle: 'production',
+          },
         },
       ];
 
@@ -362,6 +445,151 @@ describe('backstageMcpPlugin', () => {
       const result = await fetchCatalogEntities(
         mockCatalogService,
         mockAuthService,
+        mockLoggerService,
+        { name: 'my-service' },
+      );
+
+      expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
+        {
+          fields: [
+            'metadata.name',
+            'kind',
+            'metadata.tags',
+            'metadata.description',
+            'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
+          ],
+          filter: { 'metadata.name': 'my-service' },
+        },
+        {
+          credentials: {
+            principal: { type: 'service', subject: 'test' },
+            token: 'test-token',
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        entities: [
+          {
+            name: 'my-service',
+            kind: 'Component',
+            tags: ['java', 'spring'],
+            description: 'A Spring-based microservice',
+            lifecycle: 'production',
+            type: 'service',
+            owner: 'team-backend',
+            dependsOn: [],
+          },
+        ],
+      });
+    });
+
+    it('should filter entities by owner', async () => {
+      const mockEntities: Entity[] = [
+        {
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Component',
+          metadata: {
+            name: 'platform-service',
+            tags: ['platform', 'core'],
+            description: 'A platform service',
+          },
+          spec: {
+            type: 'service',
+            owner: 'team-platform',
+            lifecycle: 'production',
+          },
+        },
+      ];
+
+      mockAuthService.getOwnServiceCredentials.mockResolvedValue({
+        principal: { type: 'service', subject: 'test' },
+        token: 'test-token',
+      });
+
+      (mockCatalogService.getEntities as jest.Mock).mockResolvedValue({
+        items: mockEntities,
+      });
+
+      const result = await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
+        { owner: 'team-platform' },
+      );
+
+      expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
+        {
+          fields: [
+            'metadata.name',
+            'kind',
+            'metadata.tags',
+            'metadata.description',
+            'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
+          ],
+          filter: { 'spec.owner': 'team-platform' },
+        },
+        {
+          credentials: {
+            principal: { type: 'service', subject: 'test' },
+            token: 'test-token',
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        entities: [
+          {
+            name: 'platform-service',
+            kind: 'Component',
+            tags: ['platform', 'core'],
+            description: 'A platform service',
+            lifecycle: 'production',
+            type: 'service',
+            owner: 'team-platform',
+            dependsOn: [],
+          },
+        ],
+      });
+    });
+
+    it('should handle entities with missing description, type, and owner', async () => {
+      const mockEntities: Entity[] = [
+        {
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Component',
+          metadata: {
+            name: 'minimal-service',
+            tags: ['minimal'],
+            description: 'A minimal service',
+          },
+          spec: {
+            type: 'service',
+            owner: 'user:minimal.owner',
+            lifecycle: 'development',
+          },
+        },
+      ];
+
+      mockAuthService.getOwnServiceCredentials.mockResolvedValue({
+        principal: { type: 'service', subject: 'test' },
+        token: 'test-token',
+      });
+
+      (mockCatalogService.getEntities as jest.Mock).mockResolvedValue({
+        items: mockEntities,
+      });
+
+      const result = await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
       );
 
       expect(result).toEqual({
@@ -370,8 +598,221 @@ describe('backstageMcpPlugin', () => {
             name: 'minimal-service',
             kind: 'Component',
             tags: ['minimal'],
-            description: undefined,
-            type: undefined,
+            description: 'A minimal service',
+            lifecycle: 'development',
+            type: 'service',
+            owner: 'user:minimal.owner',
+            dependsOn: [],
+          },
+        ],
+      });
+    });
+
+    it('should return full entities when verbose is true', async () => {
+      const mockEntities: Entity[] = [
+        {
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Component',
+          metadata: {
+            name: 'full-service',
+            tags: ['java', 'spring'],
+            description: 'A full service entity',
+            uid: 'component:default/full-service',
+            namespace: 'default',
+          },
+          spec: {
+            type: 'service',
+            lifecycle: 'production',
+            owner: 'team-a',
+          },
+          relations: [
+            {
+              type: 'dependsOn',
+              targetRef: 'component:default/database',
+            },
+          ],
+        },
+      ];
+
+      mockAuthService.getOwnServiceCredentials.mockResolvedValue({
+        principal: { type: 'service', subject: 'test' },
+        token: 'test-token',
+      });
+
+      (mockCatalogService.getEntities as jest.Mock).mockResolvedValue({
+        items: mockEntities,
+      });
+
+      const result = await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
+        { verbose: true },
+      );
+
+      expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
+        {
+          filter: {},
+        },
+        {
+          credentials: {
+            principal: { type: 'service', subject: 'test' },
+            token: 'test-token',
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        entities: mockEntities, // Should return the full entities unchanged
+      });
+    });
+
+    it('should return abridged entities when verbose is false', async () => {
+      const mockEntities: Entity[] = [
+        {
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Component',
+          metadata: {
+            name: 'abridged-service',
+            tags: ['java'],
+            description: 'An abridged service entity',
+            uid: 'component:default/abridged-service',
+            namespace: 'default',
+          },
+          spec: {
+            type: 'service',
+            lifecycle: 'production',
+            owner: 'team-a',
+          },
+          relations: [
+            {
+              type: 'dependsOn',
+              targetRef: 'component:default/database',
+            },
+          ],
+        },
+      ];
+
+      mockAuthService.getOwnServiceCredentials.mockResolvedValue({
+        principal: { type: 'service', subject: 'test' },
+        token: 'test-token',
+      });
+
+      (mockCatalogService.getEntities as jest.Mock).mockResolvedValue({
+        items: mockEntities,
+      });
+
+      const result = await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
+        { verbose: false },
+      );
+
+      expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
+        {
+          fields: [
+            'metadata.name',
+            'kind',
+            'metadata.tags',
+            'metadata.description',
+            'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
+          ],
+          filter: {},
+        },
+        {
+          credentials: {
+            principal: { type: 'service', subject: 'test' },
+            token: 'test-token',
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        entities: [
+          {
+            name: 'abridged-service',
+            kind: 'Component',
+            tags: ['java'],
+            description: 'An abridged service entity',
+            lifecycle: 'production',
+            type: 'service',
+            owner: 'team-a',
+            dependsOn: ['component:default/database'],
+          },
+        ],
+      });
+    });
+
+    it('should return abridged entities when verbose is not specified (default behavior)', async () => {
+      const mockEntities: Entity[] = [
+        {
+          apiVersion: 'backstage.io/v1alpha1',
+          kind: 'Component',
+          metadata: {
+            name: 'default-service',
+            tags: ['default'],
+            description: 'A default service entity',
+          },
+          spec: {
+            type: 'service',
+            owner: 'team-default',
+          },
+        },
+      ];
+
+      mockAuthService.getOwnServiceCredentials.mockResolvedValue({
+        principal: { type: 'service', subject: 'test' },
+        token: 'test-token',
+      });
+
+      (mockCatalogService.getEntities as jest.Mock).mockResolvedValue({
+        items: mockEntities,
+      });
+
+      const result = await fetchCatalogEntities(
+        mockCatalogService,
+        mockAuthService,
+        mockLoggerService,
+        {}, // No verbose specified
+      );
+
+      expect(mockCatalogService.getEntities).toHaveBeenCalledWith(
+        {
+          fields: [
+            'metadata.name',
+            'kind',
+            'metadata.tags',
+            'metadata.description',
+            'spec.type',
+            'spec.owner',
+            'spec.lifecycle',
+            'relations',
+          ],
+          filter: {},
+        },
+        {
+          credentials: {
+            principal: { type: 'service', subject: 'test' },
+            token: 'test-token',
+          },
+        },
+      );
+
+      expect(result).toEqual({
+        entities: [
+          {
+            name: 'default-service',
+            kind: 'Component',
+            tags: ['default'],
+            description: 'A default service entity',
+            lifecycle: undefined,
+            type: 'service',
+            owner: 'team-default',
+            dependsOn: [],
           },
         ],
       });
@@ -387,6 +828,8 @@ describe('backstageMcpPlugin', () => {
       getOwnServiceCredentials: jest.fn(),
     };
 
+    const mockLoggerService = mockServices.logger.mock();
+
     beforeEach(() => {
       jest.clearAllMocks();
     });
@@ -396,7 +839,15 @@ describe('backstageMcpPlugin', () => {
       const fetchCatalogEntitiesAction = async ({
         input,
       }: {
-        input: { kind?: string; type?: string };
+        input: {
+          kind?: string;
+          type?: string;
+          name?: string;
+          owner?: string;
+          lifecycle?: string;
+          tags?: string[];
+          verbose?: boolean;
+        };
       }) => {
         if (input.type && !input.kind) {
           return {
@@ -410,6 +861,7 @@ describe('backstageMcpPlugin', () => {
         const result = await fetchCatalogEntities(
           mockCatalogService,
           mockAuthService,
+          mockLoggerService,
           input,
         );
         return {
@@ -440,7 +892,11 @@ describe('backstageMcpPlugin', () => {
             tags: ['test'],
             description: 'A test service',
           },
-          spec: { type: 'service' },
+          spec: {
+            type: 'service',
+            owner: 'test-team',
+            lifecycle: 'production',
+          },
         },
       ];
 
@@ -457,7 +913,15 @@ describe('backstageMcpPlugin', () => {
       const fetchCatalogEntitiesAction = async ({
         input,
       }: {
-        input: { kind?: string; type?: string };
+        input: {
+          kind?: string;
+          type?: string;
+          name?: string;
+          owner?: string;
+          lifecycle?: string;
+          tags?: string[];
+          verbose?: boolean;
+        };
       }) => {
         if (input.type && !input.kind) {
           return {
@@ -471,6 +935,7 @@ describe('backstageMcpPlugin', () => {
         const result = await fetchCatalogEntities(
           mockCatalogService,
           mockAuthService,
+          mockLoggerService,
           input,
         );
         return {
@@ -492,7 +957,10 @@ describe('backstageMcpPlugin', () => {
           kind: 'Component',
           tags: ['test'],
           description: 'A test service',
+          lifecycle: 'production',
           type: 'service',
+          owner: 'test-team',
+          dependsOn: [],
         },
       ]);
     });
@@ -507,7 +975,11 @@ describe('backstageMcpPlugin', () => {
             tags: ['test'],
             description: 'A test component',
           },
-          spec: { type: 'library' },
+          spec: {
+            type: 'library',
+            owner: 'test-team',
+            lifecycle: 'production',
+          },
         },
       ];
 
@@ -524,7 +996,15 @@ describe('backstageMcpPlugin', () => {
       const fetchCatalogEntitiesAction = async ({
         input,
       }: {
-        input: { kind?: string; type?: string };
+        input: {
+          kind?: string;
+          type?: string;
+          name?: string;
+          owner?: string;
+          lifecycle?: string;
+          tags?: string[];
+          verbose?: boolean;
+        };
       }) => {
         if (input.type && !input.kind) {
           return {
@@ -538,6 +1018,7 @@ describe('backstageMcpPlugin', () => {
         const result = await fetchCatalogEntities(
           mockCatalogService,
           mockAuthService,
+          mockLoggerService,
           input,
         );
         return {
@@ -559,7 +1040,10 @@ describe('backstageMcpPlugin', () => {
           kind: 'Component',
           tags: ['test'],
           description: 'A test component',
+          lifecycle: 'production',
           type: 'library',
+          owner: 'test-team',
+          dependsOn: [],
         },
       ]);
     });
@@ -606,6 +1090,7 @@ describe('backstageMcpPlugin', () => {
                 },
                 spec: {
                   type: 'library',
+                  owner: 'test-team',
                 },
               },
             ],
@@ -619,11 +1104,14 @@ describe('backstageMcpPlugin', () => {
           }),
         };
 
+        const mockLoggerService = mockServices.logger.mock();
+
         // Test the action logic
         const fetchCatalogEntitiesAction = async ({}) => {
           const result = await fetchCatalogEntities(
             mockCatalogService,
             mockAuthService,
+            mockLoggerService,
           );
           return {
             output: {
@@ -644,7 +1132,10 @@ describe('backstageMcpPlugin', () => {
           kind: 'Component',
           tags: ['test'],
           description: 'A test component',
+          lifecycle: undefined,
           type: 'library',
+          owner: 'test-team',
+          dependsOn: [],
         });
         expect(result.output.error).toBeUndefined();
       });
@@ -699,6 +1190,16 @@ describe('backstageMcpPlugin', () => {
                 .describe(
                   'Filter entities by type (e.g., service, library, website). Can only be used when kind is also specified.',
                 ),
+              name: z
+                .string()
+                .optional()
+                .describe('Filter entities by name (exact match)'),
+              owner: z
+                .string()
+                .optional()
+                .describe(
+                  'Filter entities by owner (e.g., team-platform, user:john.doe)',
+                ),
             }),
           output: (z: any) =>
             z.object({
@@ -729,6 +1230,18 @@ describe('backstageMcpPlugin', () => {
                       .optional()
                       .describe(
                         'The type of the Backstage entity (e.g., service, library, website)',
+                      ),
+                    owner: z
+                      .string()
+                      .optional()
+                      .describe(
+                        'The owner of the Backstage entity (e.g., team-platform, user:john.doe)',
+                      ),
+                    dependsOn: z
+                      .array(z.string())
+                      .optional()
+                      .describe(
+                        'List of entities this entity depends on (e.g., component:default/database)',
                       ),
                   }),
                 )
