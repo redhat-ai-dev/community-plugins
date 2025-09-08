@@ -51,7 +51,7 @@ export const backstageMcpPlugin = createBackendPlugin({
 
 List all Backstage entities such as Components, Systems, Resources, APIs, Locations, Users, and Groups. 
 By default, results are returned in JSON array format, where each entry in the JSON array is an entity with the following fields: 'name', 'description','type', 'owner', 'tags', 'dependsOn' and 'kind'.
-Setting 'verbose' to true will return the full Backstage entity objects, but should only be used if the reduced output is not sufficient.
+Setting 'verbose' to true will return the full Backstage entity objects, but should only be used if the reduced output is not sufficient, as this will significantly impact context usage (especially on smaller models).
 Note: 'type' can only be filtered on if a specified entity 'kind' is also specified.
 
 Example invocations and the output from those invocations:
