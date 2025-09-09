@@ -282,14 +282,17 @@ export async function fetchCatalogEntities(
   }
 
   // Avoid potentially logging PII when we log which filters are being used
+  const logEntityNames = process.env.LOG_ENTITY_NAMES === 'true';
   const loggedFilters = {
     ...getEntitiesOptions.filter,
   };
-  if (Object.prototype.hasOwnProperty.call(loggedFilters, 'metadata.name')) {
-    loggedFilters['metadata.name'] = '[REDACTED]';
-  }
-  if (Object.prototype.hasOwnProperty.call(loggedFilters, 'spec.owner')) {
-    loggedFilters['spec.owner'] = '[REDACTED]';
+  if (!logEntityNames) {
+    if (Object.prototype.hasOwnProperty.call(loggedFilters, 'metadata.name')) {
+      loggedFilters['metadata.name'] = '[REDACTED]';
+    }
+    if (Object.prototype.hasOwnProperty.call(loggedFilters, 'spec.owner')) {
+      loggedFilters['spec.owner'] = '[REDACTED]';
+    }
   }
   // Log the options being used to fetch the entities, with PII redacted
   logger.info(
