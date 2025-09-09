@@ -16,12 +16,14 @@
 import {
   coreServices,
   createBackendPlugin,
+  LoggerService,
 } from '@backstage/backend-plugin-api';
 import {
   CatalogService,
   catalogServiceRef,
 } from '@backstage/plugin-catalog-node';
 import { actionsRegistryServiceRef } from '@backstage/backend-plugin-api/alpha';
+import { Entity } from '@backstage/catalog-model';
 /**
  * backstageMcpPlugin backend plugin
  *
@@ -40,7 +42,7 @@ export const backstageMcpPlugin = createBackendPlugin({
         auth: coreServices.auth,
       },
       // Sample action used in the Backstage docs: https://github.com/backstage/backstage/tree/master/plugins/mcp-actions-backend
-      async init({ actionsRegistry, catalog, auth }) {
+      async init({ actionsRegistry, catalog, auth, logger }) {
         // This action is used to fetch the list of catalog entities from Backstage. It returns an array of entity names
         actionsRegistry.register({
           name: 'fetch-catalog-entities',
@@ -48,79 +50,12 @@ export const backstageMcpPlugin = createBackendPlugin({
           description: `Search and retrieve catalog entities from the Backstage server.
 
 List all Backstage entities such as Components, Systems, Resources, APIs, Locations, Users, and Groups. 
-Results are returned in JSON array format, where each entry in the JSON array has the following fields: 'name', 'description','uid', and 'type'.
+By default, results are returned in JSON array format, where each entry in the JSON array is an entity with the following fields: 'name', 'description','type', 'owner', 'tags', 'dependsOn' and 'kind'.
+Setting 'verbose' to true will return the full Backstage entity objects, but should only be used if the reduced output is not sufficient, as this will significantly impact context usage (especially on smaller models).
 Note: 'type' can only be filtered on if a specified entity 'kind' is also specified.
 
-This tool searches through the Backstage software catalog to find entities matching the given query (returns all entities if no query specified). 
-It supports filtering by entity properties and text-based search across entity metadata.
-
 Example invocations and the output from those invocations:
-  # Get all entities in the catalog
-  fetch-catalog-entities
-  Output: {
-  "entities": [
-    {
-      "name": "model-service-api",
-      "kind": "API",
-      "tags": [
-        "api",
-        "openai",
-        "vllm"
-      ]
-    },
-    {
-      "name": "developer-model-service",
-      "kind": "Component",
-      "tags": [
-        "genai",
-        "ibm-granite",
-        "vllm",
-        "llm",
-        "developer-model-service",
-        "authenticated",
-        "gateway"
-      ]
-    },
-    {
-      "name": "generated-c4d4657b4fbb886fe0a962cdf12b8732d33946ca",
-      "kind": "Location",
-      "tags": []
-    },
-    {
-      "name": "ibm-granite-8b-code-instruct",
-      "kind": "Resource",
-      "tags": [
-        "genai",
-        "ibm",
-        "llm",
-        "granite",
-        "conversational",
-        "task-text-generation"
-      ]
-    }
-  ]
-}
-
-  # Find all entities of kind Resource
-  fetch-catalog-entities kind:Resource
-  Output: {
-  "entities": [
-    {
-      "name": "ibm-granite-8b-code-instruct",
-      "kind": "Resource",
-      "tags": [
-        "genai",
-        "ibm",
-        "llm",
-        "granite",
-        "conversational",
-        "task-text-generation"
-      ]
-    }
-  ]
-}
-
-  # Find all Components of type service
+  # Find all Resources of type storage
   fetch-catalog-entities kind:Resource type:storage
   Output: {
   "entities": [
@@ -138,9 +73,10 @@ Example invocations and the output from those invocations:
       ]
     }
   ]
-}
+
+
 `,
-          // End description
+          // End tool description
           schema: {
             input: z =>
               z.object({
@@ -156,42 +92,88 @@ Example invocations and the output from those invocations:
                   .describe(
                     'Filter entities by type (e.g., ai-model, library, website).',
                   ),
+                name: z.string().optional().describe('Filter entities by name'),
+                owner: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter entities by owner (e.g., team-platform, user:john.doe)',
+                  ),
+                lifecycle: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter entities by lifecycle (e.g., production, staging, development)',
+                  ),
+                tags: z // need to see how the MCP backend will handle this
+                  .array(z.string())
+                  .optional()
+                  .describe(
+                    'Filter entities by tags (e.g., ["genai", "ibm", "llm", "granite", "conversational", "task-text-generation"])',
+                  ),
+                verbose: z
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'If true, returns the full Backstage Entity object from the API rather than the shortened output.',
+                  ),
               }),
-            output: (
-              z, // TODO: This output schema will not scale well beyond the limited set of metadata we currently return, we should look at making this more generic
-            ) =>
+            output: z =>
               z.object({
                 entities: z
                   .array(
-                    z.object({
-                      name: z
-                        .string()
-                        .describe(
-                          'The name field for each Backstage entity in the catalog',
-                        ),
-                      kind: z
-                        .string()
-                        .describe(
-                          'The kind/type of the Backstage entity (e.g., Component, API, System)',
-                        ),
-                      tags: z
-                        .array(z.string())
-                        .describe(
-                          'The tags associated with the Backstage entity',
-                        ),
-                      description: z
-                        .string()
-                        .optional()
-                        .describe('The description of the Backstage entity'),
-                      type: z
-                        .string()
-                        .optional()
-                        .describe(
-                          'The type of the Backstage entity (e.g., service, library, website)',
-                        ),
-                    }),
+                    z.union([
+                      z.object({
+                        name: z
+                          .string()
+                          .describe(
+                            'The name field for each Backstage entity in the catalog',
+                          ),
+                        kind: z
+                          .string()
+                          .describe(
+                            'The kind/type of the Backstage entity (e.g., Component, API, System)',
+                          ),
+                        tags: z
+                          .array(z.string())
+                          .describe(
+                            'The tags associated with the Backstage entity',
+                          ),
+                        description: z
+                          .string()
+                          .optional()
+                          .describe('The description of the Backstage entity'),
+                        type: z
+                          .string()
+                          .optional()
+                          .describe(
+                            'The type of the Backstage entity (e.g., service, library, website)',
+                          ),
+                        owner: z
+                          .string()
+                          .optional()
+                          .describe(
+                            'The owner of the Backstage entity (e.g., team-platform, user:john.doe)',
+                          ),
+                        lifecycle: z
+                          .string()
+                          .optional()
+                          .describe(
+                            'The lifecycle of the Backstage entity (e.g., production, staging, development)',
+                          ),
+                        dependsOn: z
+                          .array(z.string())
+                          .optional()
+                          .describe(
+                            'List of entities this entity depends on (e.g., component:default/database)',
+                          ),
+                      }),
+                      z.custom<Entity>(),
+                    ]),
                   )
-                  .describe('An array of entities'),
+                  .describe(
+                    'An array of entities (either Backstage Entity objects or shortened entity information based on verbose parameter)',
+                  ),
                 error: z
                   .string()
                   .optional()
@@ -212,7 +194,12 @@ Example invocations and the output from those invocations:
               };
             }
             try {
-              const result = await fetchCatalogEntities(catalog, auth, input);
+              const result = await fetchCatalogEntities(
+                catalog,
+                auth,
+                logger,
+                input,
+              );
               return {
                 output: {
                   ...result,
@@ -220,6 +207,10 @@ Example invocations and the output from those invocations:
                 },
               };
             } catch (error) {
+              logger.error(
+                'fetch-catalog-entities: Error fetching catalog entities:',
+                error,
+              );
               return {
                 output: {
                   entities: [],
@@ -238,7 +229,16 @@ Example invocations and the output from those invocations:
 export async function fetchCatalogEntities(
   catalog: CatalogService,
   auth: any,
-  input?: { kind?: string; type?: string },
+  logger: LoggerService,
+  input?: {
+    kind?: string;
+    type?: string;
+    name?: string;
+    owner?: string;
+    tags?: string[];
+    lifecycle?: string;
+    verbose?: boolean;
+  },
 ) {
   const credentials = await auth.getOwnServiceCredentials();
 
@@ -250,31 +250,85 @@ export async function fetchCatalogEntities(
   if (input?.type) {
     filter['spec.type'] = input.type;
   }
+  if (input?.name) {
+    filter['metadata.name'] = input.name;
+  }
+  if (input?.owner) {
+    filter['spec.owner'] = input.owner;
+  }
+  if (input?.lifecycle) {
+    filter['spec.lifecycle'] = input.lifecycle;
+  }
+  if (input?.tags) {
+    filter['metadata.tags'] = input.tags;
+  }
 
-  const { items } = await catalog.getEntities(
-    {
-      fields: [
-        'metadata.name',
-        'kind',
-        'metadata.tags',
-        'metadata.description',
-        'spec.type',
-      ],
-      filter,
-    },
-    {
-      credentials,
-    },
+  const getEntitiesOptions: any = {
+    filter,
+  };
+
+  // When using the reduced output, we can also reduce the number of fields fetched via the API
+  if (!input?.verbose) {
+    getEntitiesOptions.fields = [
+      'metadata.name',
+      'kind',
+      'metadata.tags',
+      'metadata.description',
+      'spec.type',
+      'spec.owner',
+      'spec.lifecycle',
+      'relations',
+    ];
+  }
+
+  // Avoid potentially logging PII when we log which filters are being used
+  const logEntityNames = process.env.LOG_ENTITY_NAMES === 'true';
+  const loggedFilters = {
+    ...getEntitiesOptions.filter,
+  };
+  if (!logEntityNames) {
+    if (Object.prototype.hasOwnProperty.call(loggedFilters, 'metadata.name')) {
+      loggedFilters['metadata.name'] = '[REDACTED]';
+    }
+    if (Object.prototype.hasOwnProperty.call(loggedFilters, 'spec.owner')) {
+      loggedFilters['spec.owner'] = '[REDACTED]';
+    }
+  }
+  // Log the options being used to fetch the entities, with PII redacted
+  logger.info(
+    'fetch-catalog-entities: Fetching catalog entities with options:',
+    loggedFilters,
   );
 
+  const { items } = await catalog.getEntities(getEntitiesOptions, {
+    credentials,
+  });
+
   return {
-    entities: items.map(entity => ({
-      name: entity.metadata.name,
-      kind: entity.kind,
-      tags: entity.metadata.tags || [],
-      description: entity.metadata.description,
-      type:
-        typeof entity.spec?.type === 'string' ? entity.spec.type : undefined,
-    })),
+    // Return full Entity objects when fullOutput is true
+    entities: input?.verbose
+      ? items
+      : items.map(entity => ({
+          name: entity.metadata.name,
+          kind: entity.kind,
+          tags: entity.metadata.tags || [],
+          description: entity.metadata.description,
+          lifecycle:
+            typeof entity.spec?.lifecycle === 'string'
+              ? entity.spec.lifecycle
+              : undefined,
+          type:
+            typeof entity.spec?.type === 'string'
+              ? entity.spec.type
+              : undefined,
+          owner:
+            typeof entity.spec?.owner === 'string'
+              ? entity.spec.owner
+              : undefined,
+          dependsOn:
+            entity.relations
+              ?.filter(relation => relation.type === 'dependsOn')
+              .map(relation => relation.targetRef) || [],
+        })),
   };
 }
