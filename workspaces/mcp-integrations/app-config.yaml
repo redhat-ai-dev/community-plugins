@@ -9,6 +9,7 @@ backend:
   actions:
     pluginSources:
       - 'backstage-mcp-tools'
+      - "mcp-techdocs-retrieval"
   # Used for enabling authentication, secret is shared by all backend plugins
   # See https://backstage.io/docs/auth/service-to-service-auth for
   # information on the format
@@ -52,18 +53,6 @@ integrations:
     #   apiBaseUrl: https://ghe.example.net/api/v3
     #   token: ${GHE_TOKEN}
 
-proxy:
-  ### Example for how to add a proxy endpoint for the frontend.
-  ### A typical reason to do this is to handle HTTPS and CORS for internal services.
-  # endpoints:
-  #   '/test':
-  #     target: 'https://example.com'
-  #     changeOrigin: true
-
-# Reference documentation http://backstage.io/docs/features/techdocs/configuration
-# Note: After experimenting with basic setup, use CI/CD to generate docs
-# and an external cloud storage when deploying TechDocs for production use-case.
-# https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-basic-to-recommended-deployment-approach
 techdocs:
   builder: 'local' # Alternatives - 'external'
   generator:
@@ -76,9 +65,6 @@ auth:
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
-
-scaffolder:
-  # see https://backstage.io/docs/features/software-templates/configuration for software template options
 
 catalog:
   import:
@@ -115,9 +101,6 @@ catalog:
   # Experimental: Always use the search method in UrlReaderProcessor.
   # New adopters are encouraged to enable it as this behavior will be the default in a future release.
   useUrlReadersSearch: true
-
-kubernetes:
-  # see https://backstage.io/docs/features/kubernetes/configuration for kubernetes configuration options
 
 # see https://backstage.io/docs/permissions/getting-started for more on the permission framework
 permission:

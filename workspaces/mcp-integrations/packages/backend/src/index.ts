@@ -65,4 +65,5 @@ backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
 // MCP tools
 backend.add(import('@backstage/backstage-mcp-tools-backend'));
+backend.add(import('@internal/plugin-mcp-techdocs-retrieval-backend'));
 backend.start();
