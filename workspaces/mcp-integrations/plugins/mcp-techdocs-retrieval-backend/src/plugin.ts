@@ -64,14 +64,18 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
               "title": "Developer Model Service",
               "tags": [
                 "genai",
-                "ibm-granite",
+                "ibm-granite"
               ],
               "description": "A description",
               "owner": "user:default/exampleuser",
-              "lifecycle": "experimental"
+              "lifecycle": "experimental",
+              "namespace": "default",
+              "kind": "Component",
+              "techDocsUrl": "https://backstage.example.com/docs/default/component/developer-model-service",
+              "metadataUrl": "https://backstage.example.com/api/techdocs/default/component/developer-model-service"
             }
           ]
-        )
+        }
       }
 `,
           schema: {
