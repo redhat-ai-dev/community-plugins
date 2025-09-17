@@ -121,6 +121,24 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                         .describe(
                           'The lifecycle of the techdoc entity (e.g., production, staging, development)',
                         ),
+                      namespace: z
+                        .string()
+                        .describe('The namespace of the techdoc entity'),
+                      kind: z
+                        .string()
+                        .describe(
+                          'The kind of the techdoc entity (e.g., Component, API, System)',
+                        ),
+                      techDocsUrl: z
+                        .string()
+                        .describe(
+                          'Direct URL to the TechDocs site for this entity',
+                        ),
+                      metadataUrl: z
+                        .string()
+                        .describe(
+                          'API URL to access TechDocs metadata for this entity',
+                        ),
                     }),
                   )
                   .describe('List of entities with TechDocs'),

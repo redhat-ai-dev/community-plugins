@@ -17,6 +17,7 @@ import { LoggerService, DiscoveryService } from '@backstage/backend-plugin-api';
 import type { Config } from '@backstage/config';
 import { Publisher, PublisherBase } from '@backstage/plugin-techdocs-node';
 import { CatalogService } from '@backstage/plugin-catalog-node';
+import { Entity } from '@backstage/catalog-model';
 
 export interface TechDocsEntity {
   name: string;
@@ -24,8 +25,9 @@ export interface TechDocsEntity {
   description: string;
   owner: string;
   lifecycle: string;
-  namespace?: string;
+  namespace: string;
   title: string;
+  kind: string;
 }
 
 export interface TechDocsEntityWithUrls extends TechDocsEntity {
@@ -37,6 +39,12 @@ export interface ListTechDocsOptions {
   entityType?: string;
   namespace?: string;
   limit?: number;
+}
+
+export interface TechDocsCoverageResult {
+  totalEntities: number;
+  entitiesWithDocs: number;
+  coveragePercentage: number;
 }
 
 export class TechDocsService {
@@ -63,13 +71,32 @@ export class TechDocsService {
   }
 
   /**
+   * Generate TechDocs URLs for a given entity
+   */
+  async generateTechDocsUrls(
+    entity: Entity,
+  ): Promise<{ techDocsUrl: string; metadataUrl: string }> {
+    // Use the configured frontend base URL from config
+    const appBaseUrl = this.config.getString('app.baseUrl');
+    const backendBaseUrl = await this.discovery.getBaseUrl('catalog');
+
+    const { namespace = 'default', name } = entity.metadata;
+    const kind = entity.kind.toLowerCase();
+
+    return {
+      techDocsUrl: `${appBaseUrl}/docs/${namespace}/${kind}/${name}`,
+      metadataUrl: `${backendBaseUrl}/entities/by-name/${kind}/${namespace}/${name}`,
+    };
+  }
+
+  /**
    * List all entities that have TechDocs available
    */
   async listTechDocs(
     options: ListTechDocsOptions = {},
     auth: any,
     catalog: CatalogService,
-  ): Promise<{ entities: TechDocsEntity[] }> {
+  ): Promise<{ entities: TechDocsEntityWithUrls[] }> {
     const { entityType, namespace, limit = 500 } = options;
     const credentials = await auth.getOwnServiceCredentials();
 
@@ -108,21 +135,30 @@ export class TechDocsService {
       `Found ${resp.items.length} entities, filtering for techdocs-ref annotation`,
     );
 
-    // Filter entities that have techdocs-ref annotation
-    const entities = resp.items
-      .filter(
-        entity => entity.metadata?.annotations?.['backstage.io/techdocs-ref'],
-      )
-      .map(entity => ({
-        name: entity.metadata.name,
-        title: entity.metadata.title || '',
-        tags: entity.metadata.tags || [],
-        description: entity.metadata.description || '',
-        owner: String(entity.metadata.owner || entity.spec?.owner || ''),
-        lifecycle: String(
-          entity.metadata.lifecycle || entity.spec?.lifecycle || '',
-        ),
-      }));
+    // Filter entities that have techdocs-ref annotation and generate URLs
+    const entitiesWithTechDocs = resp.items.filter(
+      entity => entity.metadata?.annotations?.['backstage.io/techdocs-ref'],
+    );
+
+    const entities = await Promise.all(
+      entitiesWithTechDocs.map(async entity => {
+        const urls = await this.generateTechDocsUrls(entity);
+        return {
+          name: entity.metadata.name,
+          title: entity.metadata.title || '',
+          tags: entity.metadata.tags || [],
+          description: entity.metadata.description || '',
+          owner: String(entity.metadata.owner || entity.spec?.owner || ''),
+          lifecycle: String(
+            entity.metadata.lifecycle || entity.spec?.lifecycle || '',
+          ),
+          namespace: entity.metadata.namespace || 'default',
+          kind: entity.kind,
+          techDocsUrl: urls.techDocsUrl,
+          metadataUrl: urls.metadataUrl,
+        };
+      }),
+    );
 
     this.logger.info(
       `Successfully found ${entities.length} entities with TechDocs`,
