@@ -97,7 +97,6 @@ describe('TechDocsService', () => {
       mockDiscovery,
       mockFetch,
     );
-    // Mock the publisher
     jest.spyOn(service, 'getPublisher').mockResolvedValue(mockPublisher as any);
     jest.clearAllMocks();
   });
@@ -694,6 +693,8 @@ describe('TechDocsService', () => {
 
       const mockHtmlContent =
         '<html><head><title>Test Service Docs</title></head><body><h1>Welcome</h1></body></html>';
+      const expectedTextContent = 'Test Service Docs\nWelcome';
+
       mockFetch.mockResolvedValue({
         ok: true,
         text: jest.fn().mockResolvedValue(mockHtmlContent),
@@ -718,10 +719,10 @@ describe('TechDocsService', () => {
         title: 'test-service title',
         kind: 'component',
         namespace: 'default',
-        content: mockHtmlContent,
+        content: expectedTextContent,
         pageTitle: 'Test Service Docs',
         path: 'index.html',
-        contentType: 'html',
+        contentType: 'text',
         lastModified: '2024-01-15T10:10:00.000Z',
         metadata: {
           lastUpdated: '2024-01-15T10:10:00.000Z',
@@ -813,6 +814,7 @@ describe('TechDocsService', () => {
       };
 
       const mockHtmlContent = '<html><body><h1>Welcome</h1></body></html>';
+      const expectedTextContent = 'Welcome';
 
       // First call returns 401, second call with auth succeeds
       mockFetch
@@ -835,7 +837,7 @@ describe('TechDocsService', () => {
         mockCatalog as any,
       );
 
-      expect(result?.content).toBe(mockHtmlContent);
+      expect(result?.content).toBe(expectedTextContent);
       expect(mockFetch).toHaveBeenCalledTimes(2);
 
       // First call without auth
@@ -886,6 +888,7 @@ describe('TechDocsService', () => {
       };
 
       const mockHtmlContent = '<html><body><h1>Welcome</h1></body></html>';
+      const expectedTextContent = 'Welcome';
 
       // First call returns 401, second call with service credentials succeeds
       mockFetch
@@ -908,7 +911,7 @@ describe('TechDocsService', () => {
         mockCatalog as any,
       );
 
-      expect(result?.content).toBe(mockHtmlContent);
+      expect(result?.content).toBe(expectedTextContent);
       expect(mockFetch).toHaveBeenCalledTimes(2);
 
       // Second call should use service token
@@ -1049,19 +1052,6 @@ describe('TechDocsService', () => {
       ).getStaticToken.bind(serviceWithInvalidConfig);
       const token = getStaticTokenMethod();
       expect(token).toBeUndefined();
-    });
-  });
-
-  describe('initialization', () => {
-    it('should initialize publisher when getPublisher is called', async () => {
-      const publisher = await service.getPublisher();
-      expect(publisher).toBeDefined();
-    });
-
-    it('should reuse initialized publisher on subsequent calls', async () => {
-      const publisher1 = await service.getPublisher();
-      const publisher2 = await service.getPublisher();
-      expect(publisher1).toBe(publisher2);
     });
   });
 });

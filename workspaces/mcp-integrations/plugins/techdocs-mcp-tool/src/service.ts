@@ -94,23 +94,24 @@ export class TechDocsService {
     private fetchFunction?: any,
   ) {}
 
-  private getStaticToken(): string | undefined {
-    try {
-      // Try to get the static token from backend.auth.externalAccess
-      const externalAccess = this.config.getOptionalConfigArray(
-        'backend.auth.externalAccess',
-      );
-      if (externalAccess) {
-        for (const access of externalAccess) {
-          if (access.getString('type') === 'static') {
-            return access.getOptionalString('options.token');
-          }
-        }
-      }
-    } catch (error) {
-      this.logger.debug('Could not retrieve static token from config', error);
-    }
-    return undefined;
+  // convertHtmlToText:: converts an HTML text to raw text
+  private convertHtmlToText(html: string): string {
+    const text = html
+      .replace(/<(script|style)[^>]*>.*?<\/\1>/gims, '')
+      .replace(/<!--.*?-->/gims, '')
+      .replace(/<(div|p|br|h[1-6]|li|tr)[^>]*>/gims, '\n')
+      .replace(/<[^>]*>/gims, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .replace(/^\s+|\s+$/g, '')
+      .trim();
+
+    return text;
   }
 
   async initialize() {
@@ -127,13 +128,10 @@ export class TechDocsService {
     return this.publisher!;
   }
 
-  /**
-   * Generate TechDocs URLs for a given entity
-   */
+  // generateTechDocsUrls:: creates the techdoc urls
   async generateTechDocsUrls(
     entity: Entity,
   ): Promise<{ techDocsUrl: string; metadataUrl: string }> {
-    // Use the configured frontend base URL from config
     const appBaseUrl = this.config.getString('app.baseUrl');
     const backendBaseUrl = await this.discovery.getBaseUrl('catalog');
 
@@ -146,9 +144,7 @@ export class TechDocsService {
     };
   }
 
-  /**
-   * Fetch TechDocs metadata for a given entity
-   */
+  // fetchTechDocsMetadata:: fetches all metadata for given entity
   async fetchTechDocsMetadata(
     entity: Entity,
   ): Promise<TechDocsMetadata | null> {
@@ -174,9 +170,8 @@ export class TechDocsService {
     }
   }
 
-  /**
-   * Retrieve TechDocs content for a specific entity and optional page
-   */
+  // retrieveTechDocsContent:: fetches TechDoc content
+  // for given entity
   async retrieveTechDocsContent(
     entityRef: string,
     pagePath?: string,
@@ -184,7 +179,6 @@ export class TechDocsService {
     catalog?: CatalogService,
   ): Promise<TechDocsContentResult | null> {
     try {
-      // Parse entity reference (format: kind:namespace/name)
       const [kind, namespaceAndName] = entityRef.split(':');
       const [namespace = 'default', name] = namespaceAndName?.split('/') || [];
 
@@ -194,8 +188,9 @@ export class TechDocsService {
         );
       }
 
-      // Get the entity from catalog if catalog service is provided
       let entity: Entity | undefined;
+
+      // get entity
       if (catalog && auth) {
         const credentials = await auth.getOwnServiceCredentials();
         const entityResponse = await catalog.getEntityByRef(
@@ -205,7 +200,7 @@ export class TechDocsService {
         entity = entityResponse || undefined;
       }
 
-      // Check if entity has TechDocs configured
+      // raise error if there's no techdoc for entity
       if (
         entity &&
         !entity.metadata?.annotations?.['backstage.io/techdocs-ref']
@@ -215,46 +210,34 @@ export class TechDocsService {
         );
       }
 
-      // Default to index.html if no page path specified
+      // set target path to default if not specified
       const targetPath = pagePath || 'index.html';
 
       this.logger.info(
         `Fetching TechDocs content for ${entityRef} at path: ${targetPath}`,
       );
 
-      // Get the TechDocs backend URL
       const techdocsBaseUrl = await this.discovery.getBaseUrl('techdocs');
       const contentUrl = `${techdocsBaseUrl}/static/docs/${namespace}/${kind.toLowerCase()}/${name}/${targetPath}`;
 
       this.logger.debug(`Fetching content from URL: ${contentUrl}`);
-
-      // Fetch the content via HTTP with authentication
       const fetch = this.fetchFunction || (await import('node-fetch')).default;
-
-      // Try without authentication first (for cases where TechDocs allows public access)
       let response = await fetch(contentUrl);
 
-      // If unauthorized, try with authentication
+      // check unauthorized case
+      // NOTE: Here we could set the default behavior to always use creds
       if (response.status === 401) {
         const headers: Record<string, string> = {};
 
-        // Try static token first
-        const staticToken = this.getStaticToken();
-        if (staticToken) {
-          headers.Authorization = `Bearer ${staticToken}`;
-        } else if (auth) {
-          // Fallback to service credentials
-          const credentials = await auth.getOwnServiceCredentials();
-          if (credentials?.token) {
-            headers.Authorization = `Bearer ${credentials.token}`;
-          }
-        }
+        const credentials = await auth.getOwnServiceCredentials();
+        headers.Authorization = `Bearer ${credentials.token}`;
 
         if (headers.Authorization) {
           response = await fetch(contentUrl, { headers });
         }
       }
 
+      // check 404 and err_status cases
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(
@@ -266,9 +249,9 @@ export class TechDocsService {
         );
       }
 
-      const content = await response.text();
+      let content = await response.text();
 
-      // Fetch metadata for additional information
+      // fetch metadata for entity
       const metadata = await this.fetchTechDocsMetadata(
         entity ||
           ({
@@ -277,7 +260,7 @@ export class TechDocsService {
           } as Entity),
       );
 
-      // Determine content type based on file extension
+      // try to convert any type to raw text
       let contentType: 'markdown' | 'html' | 'text' = 'text';
       if (targetPath.endsWith('.md')) {
         contentType = 'markdown';
@@ -285,13 +268,15 @@ export class TechDocsService {
         contentType = 'html';
       }
 
-      // Extract page title from HTML content if possible
+      // get page title
       let pageTitle: string | undefined;
       if (contentType === 'html') {
         const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
         if (titleMatch) {
           pageTitle = titleMatch[1].trim();
         }
+        content = this.convertHtmlToText(content);
+        contentType = 'text';
       }
 
       return {
@@ -326,9 +311,8 @@ export class TechDocsService {
     }
   }
 
-  /**
-   * Analyze documentation coverage across all entities
-   */
+  // analyzeCoverage:: analyzes the coverage of techdocs
+  // in the catalog
   async analyzeCoverage(
     options: ListTechDocsOptions = {},
     auth: any,
@@ -346,7 +330,6 @@ export class TechDocsService {
 
     this.logger.info('Analyzing TechDocs coverage...');
 
-    // Build filters for catalog query
     const filters: Record<string, string | string[]> = {};
     if (entityType) {
       filters.kind = entityType;
@@ -378,7 +361,6 @@ export class TechDocsService {
     const resp = await catalog.getEntities(getEntitiesOptions, { credentials });
     const totalEntities = resp.items.length;
 
-    // Count entities with TechDocs
     const entitiesWithDocs = resp.items.filter(
       entity => entity.metadata?.annotations?.['backstage.io/techdocs-ref'],
     ).length;
@@ -399,9 +381,7 @@ export class TechDocsService {
     };
   }
 
-  /**
-   * List all entities that have TechDocs available
-   */
+  // listTechDocs:: lists all techdoc entities
   async listTechDocs(
     options: ListTechDocsOptions = {},
     auth: any,
@@ -418,8 +398,6 @@ export class TechDocsService {
     const credentials = await auth.getOwnServiceCredentials();
 
     this.logger.info('Fetching entities from catalog...');
-
-    // Build filters for catalog query - filter for entities with techdocs-ref annotation
     const filters: Record<string, string | string[]> = {};
     if (entityType) {
       filters.kind = entityType;
@@ -461,7 +439,7 @@ export class TechDocsService {
       `Found ${resp.items.length} entities, filtering for techdocs-ref annotation`,
     );
 
-    // Filter entities that have techdocs-ref annotation and generate URLs
+    // filter entities that have techdocs
     const entitiesWithTechDocs = resp.items.filter(
       entity => entity.metadata?.annotations?.['backstage.io/techdocs-ref'],
     );

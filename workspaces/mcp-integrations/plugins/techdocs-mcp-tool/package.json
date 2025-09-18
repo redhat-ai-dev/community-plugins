@@ -1,5 +1,5 @@
 {
-  "name": "@internal/plugin-mcp-techdocs-retrieval-backend",
+  "name": "@redhat-developer-hub/backstage-plugin-techdocs-mcp-tool",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "private": true,
@@ -12,7 +12,7 @@
   },
   "backstage": {
     "role": "backend-plugin",
-    "pluginId": "mcp-techdocs-retrieval"
+    "pluginId": "techdocs-mcp-tool"
   },
   "scripts": {
     "start": "backstage-cli package start",

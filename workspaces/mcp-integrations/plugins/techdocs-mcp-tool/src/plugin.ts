@@ -22,7 +22,7 @@ import { actionsRegistryServiceRef } from '@backstage/backend-plugin-api/alpha';
 import { TechDocsService } from './service';
 
 export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
-  pluginId: 'mcp-techdocs-retrieval',
+  pluginId: 'techdocs-mcp-tool',
   register(env) {
     env.registerInit({
       deps: {
@@ -35,7 +35,8 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
         config: coreServices.rootConfig,
         discovery: coreServices.discovery,
       },
-      // Sample action used in the Backstage docs: https://github.com/backstage/backstage/tree/master/plugins/mcp-actions-backend
+      // sample action used in the Backstage docs:
+      // https://github.com/backstage/backstage/tree/master/plugins/mcp-actions-backend
       async init({
         actionsRegistry,
         catalog,
@@ -44,14 +45,15 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
         config,
         discovery,
       }) {
-        // This action is used to  entities from Backstage. It returns an array of entity names
+        // fetches all techdoc entities from the catalog.
+        // returns:: a list of techdoc entities
         actionsRegistry.register({
           name: 'fetch-techdocs',
-          title: 'Ftech TechDocs Entities',
-          description: ` Search and retrieve all Techdoc entities from the Backstage Server
+          title: 'Fetch TechDoc Entities',
+          description: `Search and retrieve all TechDoc entities from the Backstage Server
 
       List all Backstage TechDoc entities. Results are returned in JSON array format, where each
-      entry includes entity details and TechDocs metadata like last update timestamp and build information.
+      entry includes entity details and TechDocs metadata, like last update timestamp and build information.
 
       Example invocations and the output from those invocations:
         Output: {
@@ -130,9 +132,7 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                         ),
                       tags: z
                         .array(z.string())
-                        .describe(
-                          'The tags associated with the techdoc entity',
-                        ),
+                        .describe('The tags related with the techdoc entity'),
                       description: z
                         .string()
                         .describe('The description of the techdoc entity'),
@@ -169,15 +169,11 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                           lastUpdated: z
                             .string()
                             .optional()
-                            .describe(
-                              'ISO timestamp of when the TechDocs were last updated',
-                            ),
+                            .describe('Last updated TechDoc timestamp'),
                           buildTimestamp: z
                             .number()
                             .optional()
-                            .describe(
-                              'Unix timestamp of when the TechDocs were built',
-                            ),
+                            .describe('Built TechDoc timestamp'),
                           siteName: z
                             .string()
                             .optional()
@@ -221,7 +217,7 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
               };
             } catch (error) {
               logger.error(
-                'fetch-catalog-entities: Error fetching catalog entities:',
+                'fetch-techdocs: Error fetching TechDoc entities:',
                 error,
               );
               return {
@@ -233,13 +229,18 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           },
         });
 
-        // Register coverage analysis action
+        // analyzes the techdoc coverage on the software
+        // catalog entities
+        // returns::
+        //    1. total of entities in catalog
+        //    2. total of entities in catalog with Doc
+        //    3. coverage percentage
         actionsRegistry.register({
           name: 'analyze-techdocs-coverage',
           title: 'Analyze TechDocs Coverage',
           description: `Analyze documentation coverage across Backstage entities to understand what percentage of entities have TechDocs available.
 
-      This tool provides platform engineers with visibility into documentation coverage across their software ecosystem. It calculates the percentage of entities that have TechDocs configured, helping identify documentation gaps and improve overall documentation coverage.
+      It calculates the percentage of entities that have TechDocs configured, helping identify documentation gaps and improve overall documentation coverage.
 
       Example output:
       {
@@ -325,15 +326,16 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           },
         });
 
-        // Register TechDocs content retrieval action
+        // retrieves techdocs content for a specific entity.
+        // it automatically converts an HTML text into raw text.
+        // returns:: JSON repsonse with techdoc content.
         actionsRegistry.register({
           name: 'retrieve-techdocs-content',
           title: 'Retrieve TechDocs Content',
           description: `Retrieve the actual TechDocs content for a specific entity and optional page.
 
-      This tool allows AI clients to access documentation content including text, markdown, and HTML content
-      for specific catalog entities. You can retrieve the main documentation page or specific pages within
-      the entity's documentation.
+      This tool allows AI clients to access documentation content for specific catalog entities.
+      You can retrieve the main documentation page or specific pages within the entity's documentation.
 
       Example invocations and expected responses:
         Input: {
@@ -347,10 +349,10 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           "title": "Developer Model Service",
           "kind": "component",
           "namespace": "default",
-          "content": "<html>...</html>",
+          "content": "Developer Model Service Documentation\n\nWelcome to the service...",
           "pageTitle": "Developer Model Service Documentation",
           "path": "index.html",
-          "contentType": "html",
+          "contentType": "text",
           "lastModified": "2024-01-15T10:30:00Z",
           "metadata": {
             "lastUpdated": "2024-01-15T10:30:00Z",
@@ -359,6 +361,7 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           }
         }
 
+      Note: HTML files are automatically converted to plain text for better readability and AI processing.
       Supports retrieving specific pages by providing pagePath parameter (e.g., "api/endpoints.html", "guides/setup.md").`,
           schema: {
             input: z =>
@@ -388,7 +391,9 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                 namespace: z.string().describe('The namespace of the entity'),
                 content: z
                   .string()
-                  .describe('The actual documentation content'),
+                  .describe(
+                    'The actual documentation content (HTML automatically converted to plain text)',
+                  ),
                 pageTitle: z
                   .string()
                   .optional()
@@ -399,7 +404,9 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                   .describe('The path to the requested page'),
                 contentType: z
                   .enum(['markdown', 'html', 'text'])
-                  .describe('The type of content returned'),
+                  .describe(
+                    'The type of content returned (HTML files are converted to text)',
+                  ),
                 lastModified: z
                   .string()
                   .optional()
@@ -445,7 +452,7 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
 
               if (!result) {
                 throw new Error(
-                  `Failed to retrieve content for entity: ${input.entityRef}`,
+                  `retrieve-techdocs-content: Failed to retrieve content for entity: ${input.entityRef}`,
                 );
               }
 
