@@ -1,4 +1,4 @@
-# `fetch-catalog-entities` evaluation
+# MCP Tools Evaluation
 
 ## 1) "Retrieve all entries in the Backstage Catalog"
 
@@ -385,4 +385,228 @@ If you provide me with more information about your system or database, I can try
 
 ---
 
-_Generated from Backstage Catalog via MCP tool_
+# `fetch-techdocs` evaluation
+
+## 1) "List all entities that have TechDocs documentation available"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {}
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entities": [
+    {
+      "name": "developer-model-service",
+      "title": "Developer Model Service",
+      "tags": [
+        "genai",
+        "ibm-granite",
+        "vllm",
+        "llm",
+        "developer-model-service",
+        "authenticated",
+        "gateway"
+      ],
+      "description": "A vLLM and 3scale-based model service providing models for developer tools. A single model (IBM Granite Code 8b) is deployed on it through Red Hat OpenShift AI, and accessed over a secured API.",
+      "owner": "user:default/exampleuser",
+      "lifecycle": "experimental",
+      "namespace": "default",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service"
+    }
+  ]
+}
+```
+
+**Assistant Response:**
+
+```markdown
+Found 1 entity with TechDocs documentation:
+
+### 🔧 Components with Documentation (1)
+
+- **developer-model-service**
+  - Title: Developer Model Service
+  - Description: A vLLM and 3scale-based model service providing models for developer tools. A single model (IBM Granite Code 8b) is deployed on it through Red Hat OpenShift AI, and accessed over a secured API.
+  - Owner: user:default/exampleuser
+  - Lifecycle: experimental
+  - Tags: genai, ibm-granite, vllm, llm, developer-model-service, authenticated, gateway
+  - 📚 [View Documentation](http://localhost:3000/docs/default/component/developer-model-service)
+  - 🔗 [Entity Metadata](http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service)
+```
+
+## 2) "Find Components that have TechDocs available"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityType": "Component"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entities": [
+    {
+      "name": "developer-model-service",
+      "title": "Developer Model Service",
+      "tags": [
+        "genai",
+        "ibm-granite",
+        "vllm",
+        "llm",
+        "developer-model-service",
+        "authenticated",
+        "gateway"
+      ],
+      "description": "A vLLM and 3scale-based model service providing models for developer tools. A single model (IBM Granite Code 8b) is deployed on it through Red Hat OpenShift AI, and accessed over a secured API.",
+      "owner": "user:default/exampleuser",
+      "lifecycle": "experimental",
+      "namespace": "default",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service"
+    }
+  ]
+}
+```
+
+**Assistant Response:**
+
+```markdown
+Found 1 Component with TechDocs documentation:
+
+- **developer-model-service** (Component)
+  - Title: Developer Model Service
+  - Description: A vLLM and 3scale-based model service providing models for developer tools
+  - Owner: user:default/exampleuser
+  - Lifecycle: experimental
+  - 📚 [View Documentation](http://localhost:3000/docs/default/component/developer-model-service)
+```
+
+## 3) "Show documentation links for all entities in the default namespace"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "namespace": "default"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entities": [
+    {
+      "name": "developer-model-service",
+      "title": "Developer Model Service",
+      "tags": [
+        "genai",
+        "ibm-granite",
+        "vllm",
+        "llm",
+        "developer-model-service",
+        "authenticated",
+        "gateway"
+      ],
+      "description": "A vLLM and 3scale-based model service providing models for developer tools. A single model (IBM Granite Code 8b) is deployed on it through Red Hat OpenShift AI, and accessed over a secured API.",
+      "owner": "user:default/exampleuser",
+      "lifecycle": "experimental",
+      "namespace": "default",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service"
+    }
+  ]
+}
+```
+
+**Assistant Response:**
+
+```markdown
+Documentation available for entities in the 'default' namespace:
+
+1. **developer-model-service** (Component)
+   - 📚 Documentation: http://localhost:3000/docs/default/component/developer-model-service
+   - 🔗 Metadata: http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service
+   - Tags: genai, ibm-granite, vllm, llm, developer-model-service, authenticated, gateway
+```
+
+## 4) "Get direct TechDocs links for the developer-model-service"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {}
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entities": [
+    {
+      "name": "developer-model-service",
+      "title": "Developer Model Service",
+      "tags": [
+        "genai",
+        "ibm-granite",
+        "vllm",
+        "llm",
+        "developer-model-service",
+        "authenticated",
+        "gateway"
+      ],
+      "description": "A vLLM and 3scale-based model service providing models for developer tools. A single model (IBM Granite Code 8b) is deployed on it through Red Hat OpenShift AI, and accessed over a secured API.",
+      "owner": "user:default/exampleuser",
+      "lifecycle": "experimental",
+      "namespace": "default",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service"
+    }
+  ]
+}
+```
+
+**Assistant Response:**
+
+```markdown
+TechDocs links for developer-model-service:
+
+- **Documentation Site**: http://localhost:3000/docs/default/component/developer-model-service
+- **Metadata API**: http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service
+
+This Component has TechDocs configured and documentation is available.
+```
+
+---
+
+_Generated from Backstage TechDocs via MCP tool_

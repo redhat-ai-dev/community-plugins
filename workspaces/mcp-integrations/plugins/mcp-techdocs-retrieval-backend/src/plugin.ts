@@ -49,13 +49,13 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           name: 'fetch-techdocs',
           title: 'Ftech TechDocs Entities',
           description: ` Search and retrieve all Techdoc entities from the Backstage Server
-      
+
       List all Backstage TechDoc entities such. By default, results are returned in JSON array format, where each
       entry in the JSON array is an entity with the following fields: 'name', 'description', 'type', 'owner', 'tags',
       'dependsOn' and 'kind'. Setting 'verbose' to true will return the full Backstage entity objects, but should
       only be used if the reduced output is not sufficient, as this will significantly impact context usage (especially
       on smaller models). Note: 'type' can only be filtered on if a specified entity 'kind' is also specified.
-      
+
       Example invocations and the output from those invocations:
         Output: {
           "entities": [
@@ -91,6 +91,24 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                   .string()
                   .optional()
                   .describe('Filter by namespace'),
+                owner: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter by owner (e.g., team-platform, user:john.doe)',
+                  ),
+                lifecycle: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter by lifecycle (e.g., production, staging, development)',
+                  ),
+                tags: z
+                  .array(z.string())
+                  .optional()
+                  .describe(
+                    'Filter by tags (e.g., ["genai", "frontend", "api"])',
+                  ),
               }),
             output: z =>
               z.object({
@@ -173,6 +191,98 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
               return {
                 output: {
                   entities: [],
+                },
+              };
+            }
+          },
+        });
+
+        // Register coverage analysis action
+        actionsRegistry.register({
+          name: 'analyze-techdocs-coverage',
+          title: 'Analyze TechDocs Coverage',
+          description: `Analyze documentation coverage across Backstage entities to understand what percentage of entities have TechDocs available.
+
+      This tool provides platform engineers with visibility into documentation coverage across their software ecosystem. It calculates the percentage of entities that have TechDocs configured, helping identify documentation gaps and improve overall documentation coverage.
+
+      Example output:
+      {
+        "totalEntities": 150,
+        "entitiesWithDocs": 95,
+        "coveragePercentage": 63.3
+      }
+
+      Supports filtering by entity type, namespace, owner, lifecycle, and tags to analyze coverage for specific subsets of entities.`,
+          schema: {
+            input: z =>
+              z.object({
+                entityType: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter by entity type (e.g., Component, API, System)',
+                  ),
+                namespace: z
+                  .string()
+                  .optional()
+                  .describe('Filter by namespace'),
+                owner: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter by owner (e.g., team-platform, user:john.doe)',
+                  ),
+                lifecycle: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Filter by lifecycle (e.g., production, staging, development)',
+                  ),
+                tags: z
+                  .array(z.string())
+                  .optional()
+                  .describe(
+                    'Filter by tags (e.g., ["genai", "frontend", "api"])',
+                  ),
+              }),
+            output: z =>
+              z.object({
+                totalEntities: z
+                  .number()
+                  .describe('Total number of entities in the filtered set'),
+                entitiesWithDocs: z
+                  .number()
+                  .describe('Number of entities that have TechDocs configured'),
+                coveragePercentage: z
+                  .number()
+                  .describe('Percentage of entities with TechDocs (0-100)'),
+              }),
+          },
+          action: async ({ input }) => {
+            try {
+              const techDocsService = new TechDocsService(
+                config,
+                logger,
+                discovery,
+              );
+              const result = await techDocsService.analyzeCoverage(
+                input,
+                auth,
+                catalog,
+              );
+              return {
+                output: result,
+              };
+            } catch (error) {
+              logger.error(
+                'analyze-techdocs-coverage: Error analyzing coverage:',
+                error,
+              );
+              return {
+                output: {
+                  totalEntities: 0,
+                  entitiesWithDocs: 0,
+                  coveragePercentage: 0,
                 },
               };
             }

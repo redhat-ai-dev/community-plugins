@@ -38,6 +38,9 @@ export interface TechDocsEntityWithUrls extends TechDocsEntity {
 export interface ListTechDocsOptions {
   entityType?: string;
   namespace?: string;
+  owner?: string;
+  lifecycle?: string;
+  tags?: string[];
   limit?: number;
 }
 
@@ -90,6 +93,79 @@ export class TechDocsService {
   }
 
   /**
+   * Analyze documentation coverage across all entities
+   */
+  async analyzeCoverage(
+    options: ListTechDocsOptions = {},
+    auth: any,
+    catalog: CatalogService,
+  ): Promise<TechDocsCoverageResult> {
+    const {
+      entityType,
+      namespace,
+      owner,
+      lifecycle,
+      tags,
+      limit = 500,
+    } = options;
+    const credentials = await auth.getOwnServiceCredentials();
+
+    this.logger.info('Analyzing TechDocs coverage...');
+
+    // Build filters for catalog query
+    const filters: Record<string, string | string[]> = {};
+    if (entityType) {
+      filters.kind = entityType;
+    }
+    if (namespace) {
+      filters['metadata.namespace'] = namespace;
+    }
+    if (owner) {
+      filters['spec.owner'] = owner;
+    }
+    if (lifecycle) {
+      filters['spec.lifecycle'] = lifecycle;
+    }
+    if (tags) {
+      filters['metadata.tags'] = tags;
+    }
+
+    const getEntitiesOptions: any = {
+      filter: Object.keys(filters).length > 0 ? filters : undefined,
+      fields: [
+        'kind',
+        'metadata.namespace',
+        'metadata.name',
+        'metadata.annotations',
+      ],
+      limit,
+    };
+
+    const resp = await catalog.getEntities(getEntitiesOptions, { credentials });
+    const totalEntities = resp.items.length;
+
+    // Count entities with TechDocs
+    const entitiesWithDocs = resp.items.filter(
+      entity => entity.metadata?.annotations?.['backstage.io/techdocs-ref'],
+    ).length;
+
+    const coveragePercentage =
+      totalEntities > 0 ? (entitiesWithDocs / totalEntities) * 100 : 0;
+
+    this.logger.info(
+      `Coverage analysis complete: ${entitiesWithDocs}/${totalEntities} entities (${coveragePercentage.toFixed(
+        1,
+      )}%) have TechDocs`,
+    );
+
+    return {
+      totalEntities,
+      entitiesWithDocs,
+      coveragePercentage: Math.round(coveragePercentage * 10) / 10, // Round to 1 decimal place
+    };
+  }
+
+  /**
    * List all entities that have TechDocs available
    */
   async listTechDocs(
@@ -97,7 +173,14 @@ export class TechDocsService {
     auth: any,
     catalog: CatalogService,
   ): Promise<{ entities: TechDocsEntityWithUrls[] }> {
-    const { entityType, namespace, limit = 500 } = options;
+    const {
+      entityType,
+      namespace,
+      owner,
+      lifecycle,
+      tags,
+      limit = 500,
+    } = options;
     const credentials = await auth.getOwnServiceCredentials();
 
     this.logger.info('Fetching entities from catalog...');
@@ -109,6 +192,15 @@ export class TechDocsService {
     }
     if (namespace) {
       filters['metadata.namespace'] = namespace;
+    }
+    if (owner) {
+      filters['spec.owner'] = owner;
+    }
+    if (lifecycle) {
+      filters['spec.lifecycle'] = lifecycle;
+    }
+    if (tags) {
+      filters['metadata.tags'] = tags;
     }
 
     const getEntitiesOptions: any = {

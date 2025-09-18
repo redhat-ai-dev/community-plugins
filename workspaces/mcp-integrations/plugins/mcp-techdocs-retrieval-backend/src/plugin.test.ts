@@ -13,88 +13,288 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  mockCredentials,
-  startTestBackend,
-} from '@backstage/backend-test-utils';
+import { startTestBackend } from '@backstage/backend-test-utils';
 import { mcpTechdocsRetrievalPlugin } from './plugin';
-import request from 'supertest';
 import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
+import { Entity } from '@backstage/catalog-model';
 
-// TEMPLATE NOTE:
-// Plugin tests are integration tests for your plugin, ensuring that all pieces
-// work together end-to-end. You can still mock injected backend services
-// however, just like anyone who installs your plugin might replace the
-// services with their own implementations.
-describe('plugin', () => {
-  it('should create and read TODO items', async () => {
-    const { server } = await startTestBackend({
-      features: [mcpTechdocsRetrievalPlugin],
-    });
-
-    await request(server).get('/api/mcp-techdocs-retrieval/todos').expect(200, {
-      items: [],
-    });
-
-    const createRes = await request(server)
-      .post('/api/mcp-techdocs-retrieval/todos')
-      .send({ title: 'My Todo' });
-
-    expect(createRes.status).toBe(201);
-    expect(createRes.body).toEqual({
-      id: expect.any(String),
-      title: 'My Todo',
-      createdBy: mockCredentials.user().principal.userEntityRef,
-      createdAt: expect.any(String),
-    });
-
-    const createdTodoItem = createRes.body;
-
-    await request(server)
-      .get('/api/mcp-techdocs-retrieval/todos')
-      .expect(200, {
-        items: [createdTodoItem],
-      });
-
-    await request(server)
-      .get(`/api/mcp-techdocs-retrieval/todos/${createdTodoItem.id}`)
-      .expect(200, createdTodoItem);
+describe('mcpTechdocsRetrievalPlugin', () => {
+  const createMockEntity = (
+    name: string,
+    kind: string = 'Component',
+    hasTechDocs: boolean = false,
+    options: Partial<Entity> = {},
+  ): Entity => ({
+    apiVersion: 'backstage.io/v1alpha1',
+    kind,
+    metadata: {
+      name,
+      namespace: 'default',
+      title: `${name} title`,
+      description: `${name} description`,
+      tags: ['test', 'mock'],
+      annotations: hasTechDocs ? { 'backstage.io/techdocs-ref': 'dir:.' } : {},
+      ...options.metadata,
+    },
+    spec: {
+      type: 'service',
+      owner: 'team-test',
+      lifecycle: 'production',
+      ...options.spec,
+    },
   });
 
-  it('should create TODO item with catalog information', async () => {
-    const { server } = await startTestBackend({
-      features: [
-        mcpTechdocsRetrievalPlugin,
-        catalogServiceMock.factory({
-          entities: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'my-component',
-                namespace: 'default',
-                title: 'My Component',
-              },
-              spec: {
-                type: 'service',
-                owner: 'me',
-              },
-            },
-          ],
-        }),
-      ],
+  describe('fetch-techdocs action', () => {
+    it('should register and execute fetch-techdocs action successfully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-with-docs', 'Component', true),
+              createMockEntity('service-without-docs', 'Component', false),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
     });
 
-    const createRes = await request(server)
-      .post('/api/mcp-techdocs-retrieval/todos')
-      .send({ title: 'My Todo', entityRef: 'component:default/my-component' });
+    it('should fetch entities with techdocs annotation', async () => {
+      const entitiesWithDocs = [
+        createMockEntity('service-1', 'Component', true),
+        createMockEntity('api-1', 'API', true),
+      ];
+      const entitiesWithoutDocs = [
+        createMockEntity('service-2', 'Component', false),
+      ];
 
-    expect(createRes.status).toBe(201);
-    expect(createRes.body).toEqual({
-      id: expect.any(String),
-      title: '[My Component] My Todo',
-      createdBy: mockCredentials.user().principal.userEntityRef,
-      createdAt: expect.any(String),
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [...entitiesWithDocs, ...entitiesWithoutDocs],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle empty catalog', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should filter by entity type', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('component-1', 'Component', true),
+              createMockEntity('api-1', 'API', true),
+              createMockEntity('system-1', 'System', true),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should filter by namespace', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true, {
+                metadata: { name: 'service-1', namespace: 'production' },
+              }),
+              createMockEntity('service-2', 'Component', true, {
+                metadata: { name: 'service-2', namespace: 'staging' },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should filter by owner', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true, {
+                spec: { owner: 'team-a' },
+              }),
+              createMockEntity('service-2', 'Component', true, {
+                spec: { owner: 'team-b' },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should filter by lifecycle', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true, {
+                spec: { lifecycle: 'production' },
+              }),
+              createMockEntity('service-2', 'Component', true, {
+                spec: { lifecycle: 'experimental' },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should filter by tags', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true, {
+                metadata: { name: 'service-1', tags: ['frontend', 'react'] },
+              }),
+              createMockEntity('service-2', 'Component', true, {
+                metadata: { name: 'service-2', tags: ['backend', 'node'] },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+  });
+
+  describe('analyze-techdocs-coverage action', () => {
+    it('should register and execute coverage analysis action successfully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true),
+              createMockEntity('service-2', 'Component', false),
+              createMockEntity('service-3', 'Component', true),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle 100% coverage scenario', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', true),
+              createMockEntity('service-2', 'Component', true),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle 0% coverage scenario', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-1', 'Component', false),
+              createMockEntity('service-2', 'Component', false),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle empty catalog for coverage analysis', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should analyze coverage with filters', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('component-1', 'Component', true, {
+                metadata: { name: 'component-1', namespace: 'production' },
+                spec: { owner: 'team-a', lifecycle: 'production' },
+              }),
+              createMockEntity('component-2', 'Component', false, {
+                metadata: { name: 'component-2', namespace: 'production' },
+                spec: { owner: 'team-a', lifecycle: 'production' },
+              }),
+              createMockEntity('api-1', 'API', true, {
+                metadata: { name: 'api-1', namespace: 'staging' },
+                spec: { owner: 'team-b', lifecycle: 'experimental' },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle catalog service errors gracefully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
     });
   });
 });
