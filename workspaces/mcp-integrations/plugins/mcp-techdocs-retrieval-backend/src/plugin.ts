@@ -324,6 +324,143 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
             }
           },
         });
+
+        // Register TechDocs content retrieval action
+        actionsRegistry.register({
+          name: 'retrieve-techdocs-content',
+          title: 'Retrieve TechDocs Content',
+          description: `Retrieve the actual TechDocs content for a specific entity and optional page.
+
+      This tool allows AI clients to access documentation content including text, markdown, and HTML content
+      for specific catalog entities. You can retrieve the main documentation page or specific pages within
+      the entity's documentation.
+
+      Example invocations and expected responses:
+        Input: {
+          "entityRef": "component:default/developer-model-service",
+          "pagePath": "index.html"
+        }
+
+        Output: {
+          "entityRef": "component:default/developer-model-service",
+          "name": "developer-model-service",
+          "title": "Developer Model Service",
+          "kind": "component",
+          "namespace": "default",
+          "content": "<html>...</html>",
+          "pageTitle": "Developer Model Service Documentation",
+          "path": "index.html",
+          "contentType": "html",
+          "lastModified": "2024-01-15T10:30:00Z",
+          "metadata": {
+            "lastUpdated": "2024-01-15T10:30:00Z",
+            "buildTimestamp": 1705313400,
+            "siteName": "Developer Model Service Docs"
+          }
+        }
+
+      Supports retrieving specific pages by providing pagePath parameter (e.g., "api/endpoints.html", "guides/setup.md").`,
+          schema: {
+            input: z =>
+              z.object({
+                entityRef: z
+                  .string()
+                  .describe(
+                    'Entity reference in format kind:namespace/name (e.g., component:default/my-service)',
+                  ),
+                pagePath: z
+                  .string()
+                  .optional()
+                  .describe(
+                    'Optional path to specific page within the documentation (defaults to index.html)',
+                  ),
+              }),
+            output: z =>
+              z.object({
+                entityRef: z
+                  .string()
+                  .describe('The entity reference that was requested'),
+                name: z.string().describe('The name of the entity'),
+                title: z.string().describe('The title of the entity'),
+                kind: z
+                  .string()
+                  .describe('The kind of the entity (e.g., component, api)'),
+                namespace: z.string().describe('The namespace of the entity'),
+                content: z
+                  .string()
+                  .describe('The actual documentation content'),
+                pageTitle: z
+                  .string()
+                  .optional()
+                  .describe('The title extracted from the page content'),
+                path: z
+                  .string()
+                  .optional()
+                  .describe('The path to the requested page'),
+                contentType: z
+                  .enum(['markdown', 'html', 'text'])
+                  .describe('The type of content returned'),
+                lastModified: z
+                  .string()
+                  .optional()
+                  .describe('ISO timestamp when the content was last modified'),
+                metadata: z
+                  .object({
+                    lastUpdated: z
+                      .string()
+                      .optional()
+                      .describe(
+                        'ISO timestamp when TechDocs were last updated',
+                      ),
+                    buildTimestamp: z
+                      .number()
+                      .optional()
+                      .describe('Unix timestamp when TechDocs were built'),
+                    siteName: z
+                      .string()
+                      .optional()
+                      .describe('Name of the TechDocs site'),
+                    siteDescription: z
+                      .string()
+                      .optional()
+                      .describe('Description of the TechDocs site'),
+                  })
+                  .optional()
+                  .describe('TechDocs metadata information'),
+              }),
+          },
+          action: async ({ input }) => {
+            try {
+              const techDocsService = new TechDocsService(
+                config,
+                logger,
+                discovery,
+              );
+              const result = await techDocsService.retrieveTechDocsContent(
+                input.entityRef,
+                input.pagePath,
+                auth,
+                catalog,
+              );
+
+              if (!result) {
+                throw new Error(
+                  `Failed to retrieve content for entity: ${input.entityRef}`,
+                );
+              }
+
+              return {
+                output: result,
+              };
+            } catch (error) {
+              logger.error(
+                'retrieve-techdocs-content: Error retrieving TechDocs content:',
+                error,
+              );
+              throw error;
+            }
+          },
+        });
       },
     });
   },

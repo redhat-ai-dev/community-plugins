@@ -50,6 +50,25 @@ export interface TechDocsEntityWithMetadata extends TechDocsEntityWithUrls {
   };
 }
 
+export interface TechDocsContentResult {
+  entityRef: string;
+  name: string;
+  title: string;
+  kind: string;
+  namespace: string;
+  content: string;
+  pageTitle?: string;
+  lastModified?: string;
+  path?: string;
+  contentType: 'markdown' | 'html' | 'text';
+  metadata?: {
+    lastUpdated?: string;
+    buildTimestamp?: number;
+    siteName?: string;
+    siteDescription?: string;
+  };
+}
+
 export interface ListTechDocsOptions {
   entityType?: string;
   namespace?: string;
@@ -72,7 +91,27 @@ export class TechDocsService {
     private config: Config,
     private logger: LoggerService,
     private discovery: DiscoveryService,
+    private fetchFunction?: any,
   ) {}
+
+  private getStaticToken(): string | undefined {
+    try {
+      // Try to get the static token from backend.auth.externalAccess
+      const externalAccess = this.config.getOptionalConfigArray(
+        'backend.auth.externalAccess',
+      );
+      if (externalAccess) {
+        for (const access of externalAccess) {
+          if (access.getString('type') === 'static') {
+            return access.getOptionalString('options.token');
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.debug('Could not retrieve static token from config', error);
+    }
+    return undefined;
+  }
 
   async initialize() {
     this.publisher = await Publisher.fromConfig(this.config, {
@@ -132,6 +171,158 @@ export class TechDocsService {
         error,
       );
       return null;
+    }
+  }
+
+  /**
+   * Retrieve TechDocs content for a specific entity and optional page
+   */
+  async retrieveTechDocsContent(
+    entityRef: string,
+    pagePath?: string,
+    auth?: any,
+    catalog?: CatalogService,
+  ): Promise<TechDocsContentResult | null> {
+    try {
+      // Parse entity reference (format: kind:namespace/name)
+      const [kind, namespaceAndName] = entityRef.split(':');
+      const [namespace = 'default', name] = namespaceAndName?.split('/') || [];
+
+      if (!kind || !name) {
+        throw new Error(
+          `Invalid entity reference format: ${entityRef}. Expected format: kind:namespace/name`,
+        );
+      }
+
+      // Get the entity from catalog if catalog service is provided
+      let entity: Entity | undefined;
+      if (catalog && auth) {
+        const credentials = await auth.getOwnServiceCredentials();
+        const entityResponse = await catalog.getEntityByRef(
+          { kind, namespace, name },
+          { credentials },
+        );
+        entity = entityResponse || undefined;
+      }
+
+      // Check if entity has TechDocs configured
+      if (
+        entity &&
+        !entity.metadata?.annotations?.['backstage.io/techdocs-ref']
+      ) {
+        throw new Error(
+          `Entity ${entityRef} does not have TechDocs configured`,
+        );
+      }
+
+      // Default to index.html if no page path specified
+      const targetPath = pagePath || 'index.html';
+
+      this.logger.info(
+        `Fetching TechDocs content for ${entityRef} at path: ${targetPath}`,
+      );
+
+      // Get the TechDocs backend URL
+      const techdocsBaseUrl = await this.discovery.getBaseUrl('techdocs');
+      const contentUrl = `${techdocsBaseUrl}/static/docs/${namespace}/${kind.toLowerCase()}/${name}/${targetPath}`;
+
+      this.logger.debug(`Fetching content from URL: ${contentUrl}`);
+
+      // Fetch the content via HTTP with authentication
+      const fetch = this.fetchFunction || (await import('node-fetch')).default;
+
+      // Try without authentication first (for cases where TechDocs allows public access)
+      let response = await fetch(contentUrl);
+
+      // If unauthorized, try with authentication
+      if (response.status === 401) {
+        const headers: Record<string, string> = {};
+
+        // Try static token first
+        const staticToken = this.getStaticToken();
+        if (staticToken) {
+          headers.Authorization = `Bearer ${staticToken}`;
+        } else if (auth) {
+          // Fallback to service credentials
+          const credentials = await auth.getOwnServiceCredentials();
+          if (credentials?.token) {
+            headers.Authorization = `Bearer ${credentials.token}`;
+          }
+        }
+
+        if (headers.Authorization) {
+          response = await fetch(contentUrl, { headers });
+        }
+      }
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(
+            `TechDocs content not found for ${entityRef} at path: ${targetPath}`,
+          );
+        }
+        throw new Error(
+          `Failed to fetch TechDocs content: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const content = await response.text();
+
+      // Fetch metadata for additional information
+      const metadata = await this.fetchTechDocsMetadata(
+        entity ||
+          ({
+            kind,
+            metadata: { name, namespace },
+          } as Entity),
+      );
+
+      // Determine content type based on file extension
+      let contentType: 'markdown' | 'html' | 'text' = 'text';
+      if (targetPath.endsWith('.md')) {
+        contentType = 'markdown';
+      } else if (targetPath.endsWith('.html') || targetPath.endsWith('.htm')) {
+        contentType = 'html';
+      }
+
+      // Extract page title from HTML content if possible
+      let pageTitle: string | undefined;
+      if (contentType === 'html') {
+        const titleMatch = content.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch) {
+          pageTitle = titleMatch[1].trim();
+        }
+      }
+
+      return {
+        entityRef,
+        name,
+        title: entity?.metadata?.title || name,
+        kind,
+        namespace,
+        content,
+        pageTitle,
+        path: targetPath,
+        contentType,
+        lastModified: metadata?.build_timestamp
+          ? new Date(metadata.build_timestamp * 1000).toISOString()
+          : undefined,
+        metadata: metadata
+          ? {
+              lastUpdated: metadata.build_timestamp
+                ? new Date(metadata.build_timestamp * 1000).toISOString()
+                : undefined,
+              buildTimestamp: metadata.build_timestamp,
+              siteName: metadata.site_name,
+              siteDescription: metadata.site_description,
+            }
+          : undefined,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to retrieve TechDocs content for ${entityRef}: ${error}`,
+      );
+      throw error;
     }
   }
 

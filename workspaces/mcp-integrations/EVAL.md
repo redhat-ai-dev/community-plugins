@@ -831,6 +831,462 @@ team-platform has strong documentation coverage with only 2 entities missing doc
 Outstanding! Production services have excellent documentation coverage - only 3 entities missing docs.
 ```
 
+# `retrieve-techdocs-content` evaluation
+
+## 1) "Show me the documentation content for the developer-model-service"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityRef": "component:default/developer-model-service"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entityRef": "component:default/developer-model-service",
+  "name": "developer-model-service",
+  "title": "Developer Model Service",
+  "kind": "component",
+  "namespace": "default",
+  "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Developer Model Service Documentation</title>\n</head>\n<body>\n    <h1>Developer Model Service</h1>\n    <p>A vLLM and 3scale-based model service providing models for developer tools.</p>\n    <h2>Overview</h2>\n    <p>This service provides access to IBM Granite Code 8b model through Red Hat OpenShift AI...</p>\n</body>\n</html>",
+  "pageTitle": "Developer Model Service Documentation",
+  "path": "index.html",
+  "contentType": "html",
+  "lastModified": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "lastUpdated": "2024-01-15T10:30:00Z",
+    "buildTimestamp": 1705313400,
+    "siteName": "Developer Model Service Docs",
+    "siteDescription": "Documentation for the developer model service"
+  }
+}
+```
+
+**Assistant Response:**
+
+```markdown
+# Developer Model Service Documentation
+
+**Entity**: component:default/developer-model-service
+**Last Updated**: January 15, 2024 at 10:30 AM
+
+## Content Summary
+
+The documentation contains information about a vLLM and 3scale-based model service that provides models for developer tools using IBM Granite Code 8b model through Red Hat OpenShift AI.
+
+**Content Type**: HTML
+**Site**: Developer Model Service Docs
+
+[The AI assistant would then provide a summary or specific answers based on the HTML content]
+```
+
+## 2) "Get the API documentation for the payment service"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityRef": "component:payments/payment-service",
+    "pagePath": "api/endpoints.html"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entityRef": "component:payments/payment-service",
+  "name": "payment-service",
+  "title": "Payment Service",
+  "kind": "component",
+  "namespace": "payments",
+  "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Payment Service API Documentation</title>\n</head>\n<body>\n    <h1>API Endpoints</h1>\n    <h2>POST /api/v1/payments</h2>\n    <p>Create a new payment transaction</p>\n    <h3>Request Body</h3>\n    <pre><code>{\n  \"amount\": 100.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"credit_card\"\n}</code></pre>\n    <h2>GET /api/v1/payments/{id}</h2>\n    <p>Retrieve payment details by ID</p>\n</body>\n</html>",
+  "pageTitle": "Payment Service API Documentation",
+  "path": "api/endpoints.html",
+  "contentType": "html",
+  "lastModified": "2024-01-14T16:45:00Z",
+  "metadata": {
+    "lastUpdated": "2024-01-14T16:45:00Z",
+    "buildTimestamp": 1705249500,
+    "siteName": "Payment Service Docs"
+  }
+}
+```
+
+**Assistant Response:**
+
+````markdown
+# Payment Service API Documentation
+
+**Entity**: component:payments/payment-service
+**Page**: api/endpoints.html
+**Last Updated**: January 14, 2024 at 4:45 PM
+
+## Available API Endpoints
+
+### POST /api/v1/payments
+
+Create a new payment transaction
+
+**Request Body:**
+
+```json
+{
+  "amount": 100.0,
+  "currency": "USD",
+  "paymentMethod": "credit_card"
+}
+```
+````
+
+### GET /api/v1/payments/{id}
+
+Retrieve payment details by ID
+
+[Additional endpoint details extracted from the HTML content]
+
+````
+
+## 3) "Show me the setup guide markdown content for the auth service"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityRef": "component:production/auth-service",
+    "pagePath": "guides/setup.md"
+  }
+}
+````
+
+**Expected MCP Tool Response:**
+
+````json
+{
+  "entityRef": "component:production/auth-service",
+  "name": "auth-service",
+  "title": "Authentication Service",
+  "kind": "component",
+  "namespace": "production",
+  "content": "# Authentication Service Setup Guide\n\n## Prerequisites\n\n- Node.js 18+\n- PostgreSQL 14+\n- Redis 6+\n\n## Installation\n\n1. Clone the repository:\n   ```bash\n   git clone https://github.com/company/auth-service\n   cd auth-service\n   ```\n\n2. Install dependencies:\n   ```bash\n   npm install\n   ```\n\n3. Configure environment variables:\n   ```bash\n   cp .env.example .env\n   ```\n\n## Configuration\n\nThe service requires the following environment variables:\n\n- `DATABASE_URL`: PostgreSQL connection string\n- `REDIS_URL`: Redis connection string\n- `JWT_SECRET`: Secret key for JWT token signing\n\n## Running the Service\n\n```bash\nnpm start\n```\n\nThe service will be available at `http://localhost:3001`.",
+  "pageTitle": null,
+  "path": "guides/setup.md",
+  "contentType": "markdown",
+  "lastModified": "2024-01-16T09:15:00Z",
+  "metadata": {
+    "lastUpdated": "2024-01-16T09:15:00Z",
+    "buildTimestamp": 1705395300,
+    "siteName": "Auth Service Documentation"
+  }
+}
+````
+
+**Assistant Response:**
+
+````markdown
+# Authentication Service Setup Guide
+
+**Entity**: component:production/auth-service
+**Page**: guides/setup.md (Markdown)
+**Last Updated**: January 16, 2024 at 9:15 AM
+
+## Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 6+
+
+## Installation Steps
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/company/auth-service
+   cd auth-service
+   ```
+````
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+
+## Required Configuration
+
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `JWT_SECRET`: Secret key for JWT token signing
+
+## Running the Service
+
+```bash
+npm start
+```
+
+Service available at: http://localhost:3001
+
+````
+
+## 4) "Get the troubleshooting section from the model service docs"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityRef": "component:default/developer-model-service",
+    "pagePath": "troubleshooting.html"
+  }
+}
+````
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entityRef": "component:default/developer-model-service",
+  "name": "developer-model-service",
+  "title": "Developer Model Service",
+  "kind": "component",
+  "namespace": "default",
+  "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Troubleshooting - Developer Model Service</title>\n</head>\n<body>\n    <h1>Troubleshooting Guide</h1>\n    <h2>Common Issues</h2>\n    <h3>Model Loading Timeout</h3>\n    <p><strong>Symptom:</strong> Requests timeout after 30 seconds</p>\n    <p><strong>Cause:</strong> Model is being loaded into memory for the first time</p>\n    <p><strong>Solution:</strong> Wait for initial model loading (can take 2-3 minutes) or increase timeout</p>\n    \n    <h3>Authentication Errors</h3>\n    <p><strong>Symptom:</strong> 401 Unauthorized responses</p>\n    <p><strong>Cause:</strong> Invalid or expired API key</p>\n    <p><strong>Solution:</strong> Verify API key configuration in 3scale</p>\n</body>\n</html>",
+  "pageTitle": "Troubleshooting - Developer Model Service",
+  "path": "troubleshooting.html",
+  "contentType": "html",
+  "lastModified": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "lastUpdated": "2024-01-15T10:30:00Z",
+    "buildTimestamp": 1705313400,
+    "siteName": "Developer Model Service Docs"
+  }
+}
+```
+
+**Assistant Response:**
+
+```markdown
+# Troubleshooting Guide - Developer Model Service
+
+## Common Issues
+
+### Model Loading Timeout
+
+- **Symptom**: Requests timeout after 30 seconds
+- **Cause**: Model is being loaded into memory for the first time
+- **Solution**: Wait for initial model loading (can take 2-3 minutes) or increase timeout
+
+### Authentication Errors
+
+- **Symptom**: 401 Unauthorized responses
+- **Cause**: Invalid or expired API key
+- **Solution**: Verify API key configuration in 3scale
+
+_Source: component:default/developer-model-service/troubleshooting.html_
+_Last Updated: January 15, 2024 at 10:30 AM_
+```
+
+## 5) "What's in the README for the payment API?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityRef": "api:payments/payment-api",
+    "pagePath": "README.md"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+````json
+{
+  "entityRef": "api:payments/payment-api",
+  "name": "payment-api",
+  "title": "Payment Processing API",
+  "kind": "api",
+  "namespace": "payments",
+  "content": "# Payment Processing API\n\nA REST API for processing payments and managing transactions.\n\n## Features\n\n- Credit card processing\n- Bank transfer support\n- Webhook notifications\n- Transaction history\n- Refund management\n\n## Quick Start\n\n### Base URL\n```\nhttps://api.payments.company.com/v1\n```\n\n### Authentication\nInclude your API key in the Authorization header:\n```\nAuthorization: Bearer your-api-key\n```\n\n### Example Request\n```bash\ncurl -X POST https://api.payments.company.com/v1/payments \\\n  -H \"Authorization: Bearer your-api-key\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"amount\": 1000,\n    \"currency\": \"USD\",\n    \"source\": \"tok_visa\"\n  }'\n```\n\n## Rate Limits\n- 1000 requests per hour per API key\n- Burst limit: 10 requests per second\n\n## Support\nFor questions, contact: payments-support@company.com",
+  "pageTitle": null,
+  "path": "README.md",
+  "contentType": "markdown",
+  "lastModified": "2024-01-14T16:45:00Z",
+  "metadata": {
+    "lastUpdated": "2024-01-14T16:45:00Z",
+    "buildTimestamp": 1705249500,
+    "siteName": "Payment API Docs"
+  }
+}
+````
+
+**Assistant Response:**
+
+```markdown
+# Payment Processing API
+
+**Entity**: api:payments/payment-api
+**Document**: README.md
+**Last Updated**: January 14, 2024 at 4:45 PM
+
+## Overview
+
+A REST API for processing payments and managing transactions.
+
+## Key Features
+
+- Credit card processing
+- Bank transfer support
+- Webhook notifications
+- Transaction history
+- Refund management
+
+## Quick Start
+
+**Base URL**: https://api.payments.company.com/v1
+
+**Authentication**: Include API key in Authorization header
+```
+
+Authorization: Bearer your-api-key
+
+````
+
+**Example Request**:
+```bash
+curl -X POST https://api.payments.company.com/v1/payments \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 1000, "currency": "USD", "source": "tok_visa"}'
+````
+
+## Rate Limits
+
+- 1000 requests/hour per API key
+- Burst: 10 requests/second
+
+**Support**: payments-support@company.com
+
+````
+
+## Error Handling Examples
+
+### Example 1: Entity not found
+
+**Question**: "Get documentation for a non-existent service"
+
+**MCP Tool Input**:
+```json
+{
+  "parameters": {
+    "entityRef": "component:default/non-existent-service"
+  }
+}
+````
+
+**Expected Error Response**:
+
+```json
+{
+  "error": "Failed to retrieve content for entity: component:default/non-existent-service"
+}
+```
+
+### Example 2: Page not found
+
+**Question**: "Get a specific page that doesn't exist"
+
+**MCP Tool Input**:
+
+```json
+{
+  "parameters": {
+    "entityRef": "component:default/developer-model-service",
+    "pagePath": "non-existent-page.html"
+  }
+}
+```
+
+**Expected Error Response**:
+
+```json
+{
+  "error": "Failed to retrieve content for entity: component:default/developer-model-service"
+}
+```
+
+### Example 3: Invalid entity reference format
+
+**Question**: "Use malformed entity reference"
+
+**MCP Tool Input**:
+
+```json
+{
+  "parameters": {
+    "entityRef": "invalid-format"
+  }
+}
+```
+
+**Expected Error Response**:
+
+```json
+{
+  "error": "Failed to retrieve content for entity: invalid-format"
+}
+```
+
+## Common AI Assistant Interaction Patterns
+
+### Pattern 1: Content Summarization
+
+- **User**: "Summarize the setup guide for the auth service"
+- **AI**: Uses `retrieve-techdocs-content` to get markdown content
+- **Follow-up**: Provides structured summary of setup steps
+
+### Pattern 2: Specific Information Extraction
+
+- **User**: "What are the API rate limits for the payment service?"
+- **AI**: Retrieves API documentation content
+- **Follow-up**: Extracts and presents rate limit information
+
+### Pattern 3: Troubleshooting Assistance
+
+- **User**: "I'm getting timeout errors with the model service"
+- **AI**: Fetches troubleshooting documentation
+- **Follow-up**: Provides relevant troubleshooting steps
+
+### Pattern 4: Code Examples
+
+- **User**: "Show me how to authenticate with the payment API"
+- **AI**: Retrieves README or API docs content
+- **Follow-up**: Extracts and formats authentication examples
+
 ---
 
 _Generated from Backstage TechDocs via MCP tool_

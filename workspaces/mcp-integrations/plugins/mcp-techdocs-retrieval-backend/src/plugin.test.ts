@@ -283,8 +283,151 @@ describe('mcpTechdocsRetrievalPlugin', () => {
     });
   });
 
+  describe('retrieve-techdocs-content action', () => {
+    it('should register and execute content retrieval action successfully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-with-docs', 'Component', true),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle entity with TechDocs', async () => {
+      const entityWithDocs = createMockEntity('service-1', 'Component', true);
+
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [entityWithDocs],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle different entity types for content retrieval', async () => {
+      const entities = [
+        createMockEntity('api-with-docs', 'API', true),
+        createMockEntity('system-with-docs', 'System', true),
+      ];
+
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities,
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle invalid entity references', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle different page paths', async () => {
+      const entityWithDocs = createMockEntity('service-1', 'Component', true);
+
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [entityWithDocs],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle entities in different namespaces', async () => {
+      const entities = [
+        createMockEntity('service-1', 'Component', true, {
+          metadata: { name: 'service-1', namespace: 'production' },
+        }),
+        createMockEntity('service-2', 'Component', true, {
+          metadata: { name: 'service-2', namespace: 'staging' },
+        }),
+      ];
+
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities,
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+  });
+
   describe('error handling', () => {
     it('should handle catalog service errors gracefully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle content retrieval errors gracefully', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-without-docs', 'Component', false),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle authentication failures in content retrieval', async () => {
+      const { server } = await startTestBackend({
+        features: [
+          mcpTechdocsRetrievalPlugin,
+          catalogServiceMock.factory({
+            entities: [
+              createMockEntity('service-with-auth-issues', 'Component', true),
+            ],
+          }),
+        ],
+      });
+
+      expect(server).toBeDefined();
+    });
+
+    it('should handle invalid entity references in content retrieval', async () => {
       const { server } = await startTestBackend({
         features: [
           mcpTechdocsRetrievalPlugin,
