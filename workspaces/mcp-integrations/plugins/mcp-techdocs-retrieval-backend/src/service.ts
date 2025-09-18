@@ -15,7 +15,11 @@
  */
 import { LoggerService, DiscoveryService } from '@backstage/backend-plugin-api';
 import type { Config } from '@backstage/config';
-import { Publisher, PublisherBase } from '@backstage/plugin-techdocs-node';
+import {
+  Publisher,
+  PublisherBase,
+  TechDocsMetadata,
+} from '@backstage/plugin-techdocs-node';
 import { CatalogService } from '@backstage/plugin-catalog-node';
 import { Entity } from '@backstage/catalog-model';
 
@@ -33,6 +37,17 @@ export interface TechDocsEntity {
 export interface TechDocsEntityWithUrls extends TechDocsEntity {
   techDocsUrl: string;
   metadataUrl: string;
+}
+
+export interface TechDocsEntityWithMetadata extends TechDocsEntityWithUrls {
+  metadata?: {
+    lastUpdated?: string;
+    buildTimestamp?: number;
+    siteName?: string;
+    siteDescription?: string;
+    etag?: string;
+    files?: string[];
+  };
 }
 
 export interface ListTechDocsOptions {
@@ -90,6 +105,34 @@ export class TechDocsService {
       techDocsUrl: `${appBaseUrl}/docs/${namespace}/${kind}/${name}`,
       metadataUrl: `${backendBaseUrl}/entities/by-name/${kind}/${namespace}/${name}`,
     };
+  }
+
+  /**
+   * Fetch TechDocs metadata for a given entity
+   */
+  async fetchTechDocsMetadata(
+    entity: Entity,
+  ): Promise<TechDocsMetadata | null> {
+    try {
+      const publisher = await this.getPublisher();
+      const { namespace = 'default', name } = entity.metadata;
+      const kind = entity.kind.toLowerCase();
+
+      const entityName = {
+        kind,
+        namespace,
+        name,
+      };
+
+      const metadata = await publisher.fetchTechDocsMetadata(entityName);
+      return metadata;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to fetch TechDocs metadata for ${entity.kind}:${entity.metadata.namespace}/${entity.metadata.name}`,
+        error,
+      );
+      return null;
+    }
   }
 
   /**
@@ -172,7 +215,7 @@ export class TechDocsService {
     options: ListTechDocsOptions = {},
     auth: any,
     catalog: CatalogService,
-  ): Promise<{ entities: TechDocsEntityWithUrls[] }> {
+  ): Promise<{ entities: TechDocsEntityWithMetadata[] }> {
     const {
       entityType,
       namespace,
@@ -235,6 +278,23 @@ export class TechDocsService {
     const entities = await Promise.all(
       entitiesWithTechDocs.map(async entity => {
         const urls = await this.generateTechDocsUrls(entity);
+        const techDocsMetadata = await this.fetchTechDocsMetadata(entity);
+
+        const metadata = techDocsMetadata
+          ? {
+              lastUpdated: techDocsMetadata.build_timestamp
+                ? new Date(
+                    techDocsMetadata.build_timestamp * 1000,
+                  ).toISOString()
+                : undefined,
+              buildTimestamp: techDocsMetadata.build_timestamp,
+              siteName: techDocsMetadata.site_name,
+              siteDescription: techDocsMetadata.site_description,
+              etag: techDocsMetadata.etag,
+              files: techDocsMetadata.files,
+            }
+          : undefined;
+
         return {
           name: entity.metadata.name,
           title: entity.metadata.title || '',
@@ -248,6 +308,7 @@ export class TechDocsService {
           kind: entity.kind,
           techDocsUrl: urls.techDocsUrl,
           metadataUrl: urls.metadataUrl,
+          metadata,
         };
       }),
     );

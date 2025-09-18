@@ -590,7 +590,13 @@ Documentation available for entities in the 'default' namespace:
       "namespace": "default",
       "kind": "Component",
       "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
-      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service"
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service",
+      "metadata": {
+        "lastUpdated": "2024-01-15T10:30:00Z",
+        "buildTimestamp": 1705313400,
+        "siteName": "Developer Model Service Docs",
+        "siteDescription": "Documentation for the developer model service"
+      }
     }
   ]
 }
@@ -603,8 +609,226 @@ TechDocs links for developer-model-service:
 
 - **Documentation Site**: http://localhost:3000/docs/default/component/developer-model-service
 - **Metadata API**: http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service
+- **Last Updated**: January 15, 2024 at 10:30 AM
+- **Site Name**: Developer Model Service Docs
 
 This Component has TechDocs configured and documentation is available.
+```
+
+## 5) "What entities were documented most recently?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {}
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "entities": [
+    {
+      "name": "auth-service",
+      "title": "Authentication Service",
+      "tags": ["security", "auth", "backend"],
+      "description": "Central authentication and authorization service",
+      "owner": "team-platform",
+      "lifecycle": "production",
+      "namespace": "production",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/production/component/auth-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/production/auth-service",
+      "metadata": {
+        "lastUpdated": "2024-01-16T09:15:00Z",
+        "buildTimestamp": 1705395300,
+        "siteName": "Auth Service Documentation"
+      }
+    },
+    {
+      "name": "developer-model-service",
+      "title": "Developer Model Service",
+      "tags": ["genai", "ibm-granite", "vllm"],
+      "description": "A vLLM and 3scale-based model service",
+      "owner": "user:default/exampleuser",
+      "lifecycle": "experimental",
+      "namespace": "default",
+      "kind": "Component",
+      "techDocsUrl": "http://localhost:3000/docs/default/component/developer-model-service",
+      "metadataUrl": "http://localhost:7007/api/catalog/entities/by-name/component/default/developer-model-service",
+      "metadata": {
+        "lastUpdated": "2024-01-15T10:30:00Z",
+        "buildTimestamp": 1705313400,
+        "siteName": "Developer Model Service Docs"
+      }
+    }
+  ]
+}
+```
+
+**Assistant Response:**
+
+```markdown
+Most recently updated TechDocs (sorted by last update):
+
+1. **auth-service** - Updated January 16, 2024 at 9:15 AM
+
+   - 📚 [Documentation](http://localhost:3000/docs/production/component/auth-service)
+   - Description: Central authentication and authorization service
+
+2. **developer-model-service** - Updated January 15, 2024 at 10:30 AM
+   - 📚 [Documentation](http://localhost:3000/docs/default/component/developer-model-service)
+   - Description: A vLLM and 3scale-based model service
+```
+
+---
+
+# `analyze-techdocs-coverage` evaluation
+
+## 1) "What's the overall documentation coverage across our platform?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {}
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "totalEntities": 150,
+  "entitiesWithDocs": 95,
+  "coveragePercentage": 63.3
+}
+```
+
+**Assistant Response:**
+
+```markdown
+📊 **Overall TechDocs Coverage Analysis**
+
+- **Total Entities**: 150
+- **Entities with Documentation**: 95
+- **Coverage Percentage**: 63.3%
+
+Your platform has moderate documentation coverage. Consider focusing on the 55 entities without documentation to improve coverage.
+```
+
+## 2) "How well documented are our API entities?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "entityType": "API"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "totalEntities": 25,
+  "entitiesWithDocs": 22,
+  "coveragePercentage": 88.0
+}
+```
+
+**Assistant Response:**
+
+```markdown
+📊 **API Documentation Coverage**
+
+- **Total APIs**: 25
+- **APIs with Documentation**: 22
+- **Coverage Percentage**: 88.0%
+
+Excellent API documentation coverage! Only 3 APIs are missing documentation.
+```
+
+## 3) "Which team has the best documentation coverage?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "owner": "team-platform"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "totalEntities": 12,
+  "entitiesWithDocs": 10,
+  "coveragePercentage": 83.3
+}
+```
+
+**Assistant Response:**
+
+```markdown
+📊 **team-platform Documentation Coverage**
+
+- **Total Entities**: 12
+- **Entities with Documentation**: 10
+- **Coverage Percentage**: 83.3%
+
+team-platform has strong documentation coverage with only 2 entities missing docs.
+```
+
+## 4) "How's documentation coverage for production services?"
+
+### Claude 4 Sonnet in Cursor
+
+**MCP Tool Input:**
+
+```json
+{
+  "parameters": {
+    "lifecycle": "production"
+  }
+}
+```
+
+**Expected MCP Tool Response:**
+
+```json
+{
+  "totalEntities": 45,
+  "entitiesWithDocs": 42,
+  "coveragePercentage": 93.3
+}
+```
+
+**Assistant Response:**
+
+```markdown
+📊 **Production Services Documentation Coverage**
+
+- **Total Production Entities**: 45
+- **Production Entities with Documentation**: 42
+- **Coverage Percentage**: 93.3%
+
+Outstanding! Production services have excellent documentation coverage - only 3 entities missing docs.
 ```
 
 ---

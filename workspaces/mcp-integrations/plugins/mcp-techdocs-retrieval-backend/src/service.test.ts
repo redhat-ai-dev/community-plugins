@@ -18,6 +18,7 @@ import { TechDocsService } from './service';
 import { Entity } from '@backstage/catalog-model';
 import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
 import { LoggerService, DiscoveryService } from '@backstage/backend-plugin-api';
+import { TechDocsMetadata } from '@backstage/plugin-techdocs-node';
 
 describe('TechDocsService', () => {
   const mockLogger = {
@@ -68,10 +69,16 @@ describe('TechDocsService', () => {
     },
   });
 
+  const mockPublisher = {
+    fetchTechDocsMetadata: jest.fn(),
+  };
+
   let service: TechDocsService;
 
   beforeEach(() => {
     service = new TechDocsService(mockConfig, mockLogger, mockDiscovery);
+    // Mock the publisher
+    jest.spyOn(service, 'getPublisher').mockResolvedValue(mockPublisher as any);
     jest.clearAllMocks();
   });
 
@@ -114,6 +121,68 @@ describe('TechDocsService', () => {
     });
   });
 
+  describe('fetchTechDocsMetadata', () => {
+    it('should fetch metadata for an entity successfully', async () => {
+      const entity = createMockEntity('test-service');
+      const mockMetadata: TechDocsMetadata = {
+        site_name: 'Test Service Docs',
+        site_description: 'Documentation for test service',
+        etag: 'abc123',
+        build_timestamp: 1609459200,
+        files: ['index.html', 'api.html'],
+      };
+
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(mockMetadata);
+
+      const result = await service.fetchTechDocsMetadata(entity);
+
+      expect(result).toEqual(mockMetadata);
+      expect(mockPublisher.fetchTechDocsMetadata).toHaveBeenCalledWith({
+        kind: 'component',
+        namespace: 'default',
+        name: 'test-service',
+      });
+    });
+
+    it('should handle errors gracefully and return null', async () => {
+      const entity = createMockEntity('test-service');
+      mockPublisher.fetchTechDocsMetadata.mockRejectedValue(
+        new Error('Metadata not found'),
+      );
+
+      const result = await service.fetchTechDocsMetadata(entity);
+
+      expect(result).toBeNull();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to fetch TechDocs metadata for Component:default/test-service',
+        expect.any(Error),
+      );
+    });
+
+    it('should handle different entity kinds and namespaces', async () => {
+      const entity = createMockEntity('test-api', 'API', false, {
+        metadata: { name: 'test-api', namespace: 'production' },
+      });
+      const mockMetadata: TechDocsMetadata = {
+        site_name: 'Test API Docs',
+        site_description: 'API documentation',
+        etag: 'xyz789',
+        build_timestamp: 1609459200,
+      };
+
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(mockMetadata);
+
+      const result = await service.fetchTechDocsMetadata(entity);
+
+      expect(result).toEqual(mockMetadata);
+      expect(mockPublisher.fetchTechDocsMetadata).toHaveBeenCalledWith({
+        kind: 'api',
+        namespace: 'production',
+        name: 'test-api',
+      });
+    });
+  });
+
   describe('listTechDocs', () => {
     it('should return entities with TechDocs annotation', async () => {
       const entitiesWithDocs = [
@@ -128,6 +197,9 @@ describe('TechDocsService', () => {
         entities: [...entitiesWithDocs, ...entitiesWithoutDocs],
       });
 
+      // Mock metadata responses
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
+
       const result = await service.listTechDocs({}, mockAuth, mockCatalog);
 
       expect(result.entities).toHaveLength(2);
@@ -136,15 +208,25 @@ describe('TechDocsService', () => {
       expect(result.entities.map(e => e.name)).not.toContain('service-2');
     });
 
-    it('should include URLs in the response', async () => {
+    it('should include URLs and metadata in the response', async () => {
       const entityWithDocs = createMockEntity(
         'service-with-docs',
         'Component',
         true,
       );
+      const mockMetadata: TechDocsMetadata = {
+        site_name: 'Service with Docs',
+        site_description: 'Documentation for service with docs',
+        etag: 'abc123',
+        build_timestamp: 1609459200,
+        files: ['index.html'],
+      };
+
       const mockCatalog = catalogServiceMock({
         entities: [entityWithDocs],
       });
+
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(mockMetadata);
 
       const result = await service.listTechDocs({}, mockAuth, mockCatalog);
 
@@ -162,11 +244,52 @@ describe('TechDocsService', () => {
           'http://localhost:3000/docs/default/component/service-with-docs',
         metadataUrl:
           'http://localhost:7007/api/entities/by-name/component/default/service-with-docs',
+        metadata: {
+          lastUpdated: '2021-01-01T00:00:00.000Z',
+          buildTimestamp: 1609459200,
+          siteName: 'Service with Docs',
+          siteDescription: 'Documentation for service with docs',
+          etag: 'abc123',
+          files: ['index.html'],
+        },
+      });
+    });
+
+    it('should handle entities without metadata gracefully', async () => {
+      const entityWithDocs = createMockEntity(
+        'service-without-metadata',
+        'Component',
+        true,
+      );
+      const mockCatalog = catalogServiceMock({
+        entities: [entityWithDocs],
+      });
+
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
+
+      const result = await service.listTechDocs({}, mockAuth, mockCatalog);
+
+      expect(result.entities).toHaveLength(1);
+      expect(result.entities[0]).toEqual({
+        name: 'service-without-metadata',
+        title: 'service-without-metadata title',
+        tags: ['test', 'mock'],
+        description: 'service-without-metadata description',
+        owner: 'team-test',
+        lifecycle: 'production',
+        namespace: 'default',
+        kind: 'Component',
+        techDocsUrl:
+          'http://localhost:3000/docs/default/component/service-without-metadata',
+        metadataUrl:
+          'http://localhost:7007/api/entities/by-name/component/default/service-without-metadata',
+        metadata: undefined,
       });
     });
 
     it('should handle empty catalog', async () => {
       const mockCatalog = catalogServiceMock({ entities: [] });
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       const result = await service.listTechDocs({}, mockAuth, mockCatalog);
 
@@ -182,6 +305,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs(
         { entityType: 'Component' },
@@ -209,6 +333,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs(
         { namespace: 'production' },
@@ -236,6 +361,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs({ owner: 'team-a' }, mockAuth, mockCatalog);
 
@@ -259,6 +385,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs(
         { lifecycle: 'production' },
@@ -286,6 +413,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs({ tags: ['frontend'] }, mockAuth, mockCatalog);
 
@@ -307,6 +435,7 @@ describe('TechDocsService', () => {
 
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs(
         {
@@ -336,6 +465,7 @@ describe('TechDocsService', () => {
       const entities = [createMockEntity('service-1', 'Component', true)];
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs({ limit: 100 }, mockAuth, mockCatalog);
 
@@ -351,6 +481,7 @@ describe('TechDocsService', () => {
       const entities = [createMockEntity('service-1', 'Component', true)];
       const mockCatalog = catalogServiceMock({ entities });
       jest.spyOn(mockCatalog, 'getEntities');
+      mockPublisher.fetchTechDocsMetadata.mockResolvedValue(null);
 
       await service.listTechDocs({}, mockAuth, mockCatalog);
 

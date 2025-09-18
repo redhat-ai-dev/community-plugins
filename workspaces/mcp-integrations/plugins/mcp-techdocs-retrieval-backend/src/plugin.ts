@@ -50,11 +50,8 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           title: 'Ftech TechDocs Entities',
           description: ` Search and retrieve all Techdoc entities from the Backstage Server
 
-      List all Backstage TechDoc entities such. By default, results are returned in JSON array format, where each
-      entry in the JSON array is an entity with the following fields: 'name', 'description', 'type', 'owner', 'tags',
-      'dependsOn' and 'kind'. Setting 'verbose' to true will return the full Backstage entity objects, but should
-      only be used if the reduced output is not sufficient, as this will significantly impact context usage (especially
-      on smaller models). Note: 'type' can only be filtered on if a specified entity 'kind' is also specified.
+      List all Backstage TechDoc entities. Results are returned in JSON array format, where each
+      entry includes entity details and TechDocs metadata like last update timestamp and build information.
 
       Example invocations and the output from those invocations:
         Output: {
@@ -72,7 +69,13 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
               "namespace": "default",
               "kind": "Component",
               "techDocsUrl": "https://backstage.example.com/docs/default/component/developer-model-service",
-              "metadataUrl": "https://backstage.example.com/api/techdocs/default/component/developer-model-service"
+              "metadataUrl": "https://backstage.example.com/api/techdocs/default/component/developer-model-service",
+              "metadata": {
+                "lastUpdated": "2024-01-15T10:30:00Z",
+                "buildTimestamp": 1705313400,
+                "siteName": "Developer Model Service Docs",
+                "siteDescription": "Documentation for the developer model service"
+              }
             }
           ]
         }
@@ -161,6 +164,39 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
                         .describe(
                           'API URL to access TechDocs metadata for this entity',
                         ),
+                      metadata: z
+                        .object({
+                          lastUpdated: z
+                            .string()
+                            .optional()
+                            .describe(
+                              'ISO timestamp of when the TechDocs were last updated',
+                            ),
+                          buildTimestamp: z
+                            .number()
+                            .optional()
+                            .describe(
+                              'Unix timestamp of when the TechDocs were built',
+                            ),
+                          siteName: z
+                            .string()
+                            .optional()
+                            .describe('Name of the TechDocs site'),
+                          siteDescription: z
+                            .string()
+                            .optional()
+                            .describe('Description of the TechDocs site'),
+                          etag: z
+                            .string()
+                            .optional()
+                            .describe('ETag for caching purposes'),
+                          files: z
+                            .array(z.string())
+                            .optional()
+                            .describe('List of files in the TechDocs site'),
+                        })
+                        .optional()
+                        .describe('TechDocs metadata information'),
                     }),
                   )
                   .describe('List of entities with TechDocs'),
