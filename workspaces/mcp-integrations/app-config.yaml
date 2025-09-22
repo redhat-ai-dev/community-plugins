@@ -9,7 +9,7 @@ backend:
   actions:
     pluginSources:
       - 'backstage-mcp-tools'
-      - "mcp-techdocs-retrieval"
+      - "techdocs-mcp-tool"
   # Used for enabling authentication, secret is shared by all backend plugins
   # See https://backstage.io/docs/auth/service-to-service-auth for
   # information on the format
@@ -99,7 +99,7 @@ catalog:
     #   rules:
     #     - allow: [User, Group]
 
-    # Uncomment these lines to add techdocs
+    ## Uncomment these lines to add techdocs
     # - type: url
     #   target: https://github.com/thepetk/model-catalog/blob/main/developer-model-service/catalog-info.yaml
     #   presence: required
