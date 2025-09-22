@@ -12532,10 +12532,12 @@ __metadata:
     "@types/express": "npm:^4.17.6"
     "@types/node-fetch": "npm:^2.6.4"
     "@types/supertest": "npm:^2.0.12"
+    "@types/turndown": "npm:^5.0.5"
     express: "npm:^4.17.1"
     express-promise-router: "npm:^4.1.0"
     node-fetch: "npm:^2.6.12"
     supertest: "npm:^6.2.4"
+    turndown: "npm:^7.2.1"
     zod: "npm:^3.22.4"
   languageName: unknown
   linkType: soft
