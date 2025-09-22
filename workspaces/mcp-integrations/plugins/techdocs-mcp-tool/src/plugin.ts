@@ -52,7 +52,7 @@ export const mcpTechdocsRetrievalPlugin = createBackendPlugin({
           title: 'Fetch TechDoc Entities',
           description: `Search and retrieve all TechDoc entities from the Backstage Server
 
-      List all Backstage TechDoc entities. Results are returned in JSON array format, where each
+      List all Backstage entities with techdocs. Results are returned in JSON array format, where each
       entry includes entity details and TechDocs metadata, like last update timestamp and build information.
 
       Example invocations and the output from those invocations:

@@ -53,6 +53,7 @@ describe('TechDocsService', () => {
 
   const mockAuth = {
     getOwnServiceCredentials: jest.fn().mockResolvedValue({
+      token: 'mock-service-token',
       principal: { subject: 'user:default/test' },
     }),
   };
@@ -693,7 +694,7 @@ describe('TechDocsService', () => {
 
       const mockHtmlContent =
         '<html><head><title>Test Service Docs</title></head><body><h1>Welcome</h1></body></html>';
-      const expectedTextContent = 'Test Service Docs\nWelcome';
+      const expectedTextContent = '# Welcome';
 
       mockFetch.mockResolvedValue({
         ok: true,
@@ -719,7 +720,7 @@ describe('TechDocsService', () => {
         title: 'test-service title',
         kind: 'component',
         namespace: 'default',
-        content: expectedTextContent,
+        content: 'Test Service Docs\n\n# Welcome',
         pageTitle: 'Test Service Docs',
         path: 'index.html',
         contentType: 'text',
@@ -814,7 +815,7 @@ describe('TechDocsService', () => {
       };
 
       const mockHtmlContent = '<html><body><h1>Welcome</h1></body></html>';
-      const expectedTextContent = 'Welcome';
+      const expectedTextContent = '# Welcome';
 
       // First call returns 401, second call with auth succeeds
       mockFetch
@@ -846,13 +847,13 @@ describe('TechDocsService', () => {
         'http://localhost:7007/api/techdocs/static/docs/default/component/test-service/index.html',
       );
 
-      // Second call with static token auth
+      // Second call with service credentials auth
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
         'http://localhost:7007/api/techdocs/static/docs/default/component/test-service/index.html',
         {
           headers: {
-            Authorization: 'Bearer mock-static-token',
+            Authorization: 'Bearer mock-service-token',
           },
         },
       );
@@ -888,7 +889,7 @@ describe('TechDocsService', () => {
       };
 
       const mockHtmlContent = '<html><body><h1>Welcome</h1></body></html>';
-      const expectedTextContent = 'Welcome';
+      const expectedTextContent = '# Welcome';
 
       // First call returns 401, second call with service credentials succeeds
       mockFetch
@@ -1007,51 +1008,6 @@ describe('TechDocsService', () => {
       expect(result?.name).toBe('test-service');
       expect(result?.kind).toBe('component');
       expect(result?.namespace).toBe('default');
-    });
-  });
-
-  describe('getStaticToken', () => {
-    it('should retrieve static token from config', () => {
-      // Use reflection to test private method
-      const getStaticTokenMethod = (service as any).getStaticToken.bind(
-        service,
-      );
-      const token = getStaticTokenMethod();
-      expect(token).toBe('mock-static-token');
-    });
-
-    it('should return undefined when no static token configured', () => {
-      const configWithoutToken = new ConfigReader({
-        app: { baseUrl: 'http://localhost:3000' },
-      });
-      const serviceWithoutToken = new TechDocsService(
-        configWithoutToken,
-        mockLogger,
-        mockDiscovery,
-        mockFetch,
-      );
-
-      const getStaticTokenMethod = (
-        serviceWithoutToken as any
-      ).getStaticToken.bind(serviceWithoutToken);
-      const token = getStaticTokenMethod();
-      expect(token).toBeUndefined();
-    });
-
-    it('should handle config errors gracefully', () => {
-      const invalidConfig = new ConfigReader({});
-      const serviceWithInvalidConfig = new TechDocsService(
-        invalidConfig,
-        mockLogger,
-        mockDiscovery,
-        mockFetch,
-      );
-
-      const getStaticTokenMethod = (
-        serviceWithInvalidConfig as any
-      ).getStaticToken.bind(serviceWithInvalidConfig);
-      const token = getStaticTokenMethod();
-      expect(token).toBeUndefined();
     });
   });
 });

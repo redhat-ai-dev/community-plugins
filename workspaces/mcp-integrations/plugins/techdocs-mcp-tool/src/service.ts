@@ -22,6 +22,7 @@ import {
 } from '@backstage/plugin-techdocs-node';
 import { CatalogService } from '@backstage/plugin-catalog-node';
 import { Entity } from '@backstage/catalog-model';
+import TurndownService from 'turndown';
 
 export interface TechDocsEntity {
   name: string;
@@ -86,32 +87,38 @@ export interface TechDocsCoverageResult {
 
 export class TechDocsService {
   private publisher?: PublisherBase;
+  private turndownService: TurndownService;
 
   constructor(
     private config: Config,
     private logger: LoggerService,
     private discovery: DiscoveryService,
     private fetchFunction?: any,
-  ) {}
+  ) {
+    this.turndownService = new TurndownService({
+      headingStyle: 'atx',
+      bulletListMarker: '-',
+      codeBlockStyle: 'fenced',
+    });
+  }
 
-  // convertHtmlToText:: converts an HTML text to raw text
+  // convertHtmlToText:: converts an HTML text to markdown/text using turndown
   private convertHtmlToText(html: string): string {
-    const text = html
-      .replace(/<(script|style)[^>]*>.*?<\/\1>/gims, '')
-      .replace(/<!--.*?-->/gims, '')
-      .replace(/<(div|p|br|h[1-6]|li|tr)[^>]*>/gims, '\n')
-      .replace(/<[^>]*>/gims, '')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-      .replace(/\n\s*\n\s*\n/g, '\n\n')
-      .replace(/^\s+|\s+$/g, '')
-      .trim();
-
-    return text;
+    try {
+      return this.turndownService.turndown(html);
+    } catch (error) {
+      this.logger.warn(
+        'Failed to convert HTML with turndown, falling back to plain text',
+        error,
+      );
+      // Fallback to simple text extraction if turndown fails
+      return html
+        .replace(/<(script|style)[^>]*>.*?<\/\1>/gims, '')
+        .replace(/<!--.*?-->/gims, '')
+        .replace(/<[^>]*>/gims, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
   }
 
   async initialize() {
