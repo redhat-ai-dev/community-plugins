@@ -200,6 +200,7 @@ export class TechDocsService {
       // get entity
       if (catalog && auth) {
         const credentials = await auth.getOwnServiceCredentials();
+        this.logger.info(credentials);
         const entityResponse = await catalog.getEntityByRef(
           { kind, namespace, name },
           { credentials },
@@ -229,20 +230,13 @@ export class TechDocsService {
 
       this.logger.debug(`Fetching content from URL: ${contentUrl}`);
       const fetch = this.fetchFunction || (await import('node-fetch')).default;
-      let response = await fetch(contentUrl);
-
-      // check unauthorized case
-      // NOTE: Here we could set the default behavior to always use creds
-      if (response.status === 401) {
-        const headers: Record<string, string> = {};
-
-        const credentials = await auth.getOwnServiceCredentials();
-        headers.Authorization = `Bearer ${credentials.token}`;
-
-        if (headers.Authorization) {
-          response = await fetch(contentUrl, { headers });
-        }
-      }
+      const headers: Record<string, string> = {};
+      const { token } = await auth.getPluginRequestToken({
+        onBehalfOf: await auth.getOwnServiceCredentials(),
+        targetPluginId: 'techdocs',
+      });
+      headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(contentUrl, { headers });
 
       // check 404 and err_status cases
       if (!response.ok) {
