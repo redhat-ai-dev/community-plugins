@@ -1,5 +1,29 @@
 # @backstage-community/plugin-npm-common
 
+## 1.13.0
+
+### Minor Changes
+
+- bb724ca: Backstage version bump to v1.44.0
+
+## 1.12.0
+
+### Minor Changes
+
+- fcd92b0: Backstage version bump to v1.43.2
+
+## 1.11.0
+
+### Minor Changes
+
+- 3bf54c8: Backstage version bump to v1.42.3
+
+## 1.10.1
+
+### Patch Changes
+
+- bff3611: Remove unused @backstage/catalog-client dependency from the backend and other test devDependencies
+
 ## 1.10.0
 
 ### Minor Changes

@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import '@backstage/ui/css/styles.css';
 import { Entity } from '@backstage/catalog-model';
 import { Page, Header, TabbedLayout } from '@backstage/core-components';
 import { createDevApp } from '@backstage/dev-utils';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import {
   KubernetesApi,
+  kubernetesApiRef,
+  kubernetesProxyApiRef,
+  kubernetesAuthProvidersApiRef,
   KubernetesProxyApi,
 } from '@backstage/plugin-kubernetes-react';
 import { permissionApiRef } from '@backstage/plugin-permission-react';
@@ -32,11 +36,6 @@ import {
 } from '../src/__fixtures__/advancedClusterSecurityData';
 import { enterpriseContractResult } from '../src/__fixtures__/enterpriseContractData';
 import { TektonCI, tektonPlugin } from '../src/plugin';
-import {
-  kubernetesApiRef,
-  kubernetesAuthProvidersApiRef,
-  kubernetesProxyApiRef,
-} from '../src/types/types';
 
 const mockEntity: Entity = {
   apiVersion: 'backstage.io/v1alpha1',

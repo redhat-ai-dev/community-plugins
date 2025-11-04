@@ -1,5 +1,49 @@
 ### Dependencies
 
+## 5.10.0
+
+### Minor Changes
+
+- 296d257: Backstage version bump to v1.44.2
+
+### Patch Changes
+
+- Updated dependencies [296d257]
+  - @backstage-community/plugin-ocm-common@3.14.0
+
+## 5.9.0
+
+### Minor Changes
+
+- 36f2716: Backstage version bump to v1.43.2
+
+### Patch Changes
+
+- Updated dependencies [36f2716]
+  - @backstage-community/plugin-ocm-common@3.13.0
+
+## 5.8.0
+
+### Minor Changes
+
+- 402db3a: Backstage version bump to v1.42.5
+
+### Patch Changes
+
+- Updated dependencies [402db3a]
+  - @backstage-community/plugin-ocm-common@3.12.0
+
+## 5.7.0
+
+### Minor Changes
+
+- 9740a42: Backstage version bump to v1.41.1
+
+### Patch Changes
+
+- Updated dependencies [9740a42]
+  - @backstage-community/plugin-ocm-common@3.11.0
+
 ## 5.6.1
 
 ### Patch Changes
