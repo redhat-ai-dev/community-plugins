@@ -190,6 +190,9 @@ workspace/matomo:
 workspace/mcp-chat:
   - "Workspace\\s*mcp-chat"
 
+workspace/mcp-integrations:
+  - "Workspace\\s*mcp-integrations"
+
 workspace/mend:
   - "Workspace\\s*mend"
 

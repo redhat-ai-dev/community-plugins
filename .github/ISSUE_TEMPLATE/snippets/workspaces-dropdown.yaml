@@ -68,6 +68,7 @@ attributes:
     - manage
     - matomo
     - mcp-chat
+    - mcp-integrations
     - mend
     - microsoft-calendar
     - mta
